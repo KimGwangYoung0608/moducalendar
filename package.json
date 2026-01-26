@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://KimGwangYoung0608.github.io/MODU-calendar",
+  "homepage": "https://KimGwangYoung0608.github.io/moducalendar",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
