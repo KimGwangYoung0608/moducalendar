@@ -214,6 +214,36 @@ export function useCalendarStore() {
     }
   };
 
+  // Update schedule in Firebase
+  const updateSchedule = async (id: string, updates: Partial<Omit<Schedule, 'id' | 'createdAt'>>) => {
+    const schedule = schedules.find(s => s.id === id);
+    if (!schedule) return;
+
+    const updatedSchedule = { ...schedule, ...updates };
+    
+    // Optimistic update
+    const previousSchedules = schedules;
+    setSchedules(prev => prev.map(s => 
+      s.id === id ? updatedSchedule : s
+    ));
+    
+    try {
+      await setDoc(doc(db, SCHEDULES_COLLECTION, id), {
+        title: updatedSchedule.title,
+        description: updatedSchedule.description,
+        date: updatedSchedule.date,
+        userId: updatedSchedule.userId,
+        categoryId: updatedSchedule.categoryId,
+        createdAt: updatedSchedule.createdAt,
+        isCompleted: updatedSchedule.isCompleted ?? false,
+      });
+    } catch (error) {
+      console.error('Failed to update schedule in Firebase:', error);
+      // Rollback on error
+      setSchedules(previousSchedules);
+    }
+  };
+
   const getSchedulesByDate = (date: string) => {
     return schedules.filter(s => s.date === date);
   };
@@ -233,6 +263,7 @@ export function useCalendarStore() {
     lastSync,
     updateSettings,
     addSchedule,
+    updateSchedule,
     deleteSchedule,
     toggleScheduleComplete,
     getSchedulesByDate,

@@ -10,6 +10,27 @@ import { LunarConverter } from '@/components/calendar/LunarConverter';
 import { useCalendarStore } from '@/hooks/useCalendarStore';
 import { getKoreanHolidays, getHolidayForDate } from '@/utils/koreanHolidays';
 import { solarToLunar } from '@/utils/lunarCalendar';
+import { Schedule } from '@/types/calendar';
+
+// Helper function to get last Monday of a month
+const getLastMondayOfMonth = (year: number, month: number): Date => {
+  const lastDay = new Date(year, month + 1, 0); // Last day of month
+  const lastDayOfWeek = lastDay.getDay();
+  // Calculate days to subtract to get to Monday (day 1)
+  // If lastDayOfWeek is 0 (Sunday), we need to go back 6 days
+  // If lastDayOfWeek is 1 (Monday), we're already there
+  // If lastDayOfWeek is 2 (Tuesday), we need to go back 1 day, etc.
+  const daysToSubtract = lastDayOfWeek === 0 ? 6 : lastDayOfWeek - 1;
+  const lastMonday = new Date(year, month + 1, 0 - daysToSubtract);
+  return lastMonday;
+};
+
+// Helper function to add days to a date
+const addDays = (dateStr: string, days: number): string => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 
 const Index = () => {
   const {
@@ -19,6 +40,7 @@ const Index = () => {
     lastSync,
     updateSettings,
     addSchedule,
+    updateSchedule,
     deleteSchedule,
     toggleScheduleComplete,
     refreshData,
@@ -35,6 +57,46 @@ const Index = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   
   const scheduleListRef = useRef<HTMLDivElement>(null);
+
+  // Generate monthly "후불제 정산정리" schedules
+  useEffect(() => {
+    const checkAndAddMonthlySettlement = async () => {
+      const year = currentDate.getFullYear();
+      
+      // Check for current year and next year
+      for (let y = year; y <= year + 1; y++) {
+        for (let m = 0; m < 12; m++) {
+          const lastMonday = getLastMondayOfMonth(y, m);
+          const dateStr = `${lastMonday.getFullYear()}-${String(lastMonday.getMonth() + 1).padStart(2, '0')}-${String(lastMonday.getDate()).padStart(2, '0')}`;
+          
+          // Check if this schedule already exists
+          const existingSchedule = schedules.find(s => 
+            s.date === dateStr && s.title.includes('후불제 정산정리')
+          );
+          
+          if (!existingSchedule && settings.users.length > 0) {
+            // Find or create a category for this
+            const settlementCategory = settings.categories.find(c => c.name === '업무') || settings.categories[0];
+            
+            addSchedule({
+              title: '✨️후불제 정산정리',
+              description: `${lastMonday.getFullYear()}년 ${lastMonday.getMonth() + 1}월 마지막 주 월요일 정산`,
+              date: dateStr,
+              userId: settings.users[0]?.id ?? '',
+              categoryId: settlementCategory?.id ?? '',
+            });
+          }
+        }
+      }
+    };
+
+    // Only run if we have settings loaded
+    if (settings.users.length > 0 && schedules !== undefined) {
+      // Debounce to prevent multiple calls
+      const timeoutId = setTimeout(checkAndAddMonthlySettlement, 1000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [currentDate.getFullYear(), settings.users.length, schedules.length]);
 
   // Get holidays for current year and adjacent years
   const holidays = useMemo(() => {
@@ -96,10 +158,28 @@ const Index = () => {
   }) => {
     if (!selectedDate) return;
 
+    // Add main schedule
     addSchedule({
       ...data,
       date: selectedDate,
     });
+
+    // Check if category is "공구" - auto add settlement schedule 11 days later
+    const category = settings.categories.find(c => c.id === data.categoryId);
+    if (category && category.name === '공구') {
+      const settlementDate = addDays(selectedDate, 11);
+      addSchedule({
+        title: `정산+${data.title}`,
+        description: `${data.title} 공구 정산 (원 스케줄 날짜: ${selectedDate})`,
+        date: settlementDate,
+        userId: data.userId,
+        categoryId: data.categoryId,
+      });
+    }
+  };
+
+  const handleUpdateSchedule = (id: string, updates: Partial<Omit<Schedule, 'id' | 'createdAt'>>) => {
+    updateSchedule(id, updates);
   };
 
   const handleAddFromLunar = (date: string, title: string, isLunar: boolean, lunarMonth: number, lunarDay: number, yearsToAdd: number[] = []) => {
@@ -240,6 +320,7 @@ const Index = () => {
               categories={settings.categories}
               onDelete={deleteSchedule}
               onToggleComplete={toggleScheduleComplete}
+              onUpdate={handleUpdateSchedule}
             />
           </div>
         )}
