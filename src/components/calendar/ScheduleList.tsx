@@ -48,9 +48,10 @@ export function ScheduleList({ schedules, users, categories, onDelete }: Schedul
     const [year, month, day] = dateStr.split('-').map(Number);
     const lunar = solarToLunar(year, month, day);
     if (lunar) {
-      return `${year}년 ${month}월 ${day}일 (음력 ${lunar.lunarYear}년 ${lunar.lunarMonth}월 ${lunar.lunarDay}일)`;
+      const leapPrefix = lunar.isLeapMonth ? '윤' : '';
+      return `${year}년 ${month}월 ${day}일 (음력 ${lunar.lunarYear}년 ${leapPrefix}${lunar.lunarMonth}월 ${lunar.lunarDay}일)`;
     }
-    return `${year}년 ${month}월 ${day}일`;
+    return `${year}년 ${month}월 ${day}일 (음력 조회 필요)`;
   };
 
   if (schedules.length === 0) {

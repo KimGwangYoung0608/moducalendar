@@ -97,10 +97,14 @@ export function CalendarGrid({
     return categories.find(c => c.id === categoryId)?.name ?? '';
   };
 
-  const getLunarDay = (date: Date) => {
+  const getLunarInfo = (date: Date) => {
     const lunar = solarToLunar(date.getFullYear(), date.getMonth() + 1, date.getDate());
     if (!lunar) return null;
-    return lunar.lunarDay;
+    return {
+      day: lunar.lunarDay,
+      isLeapMonth: lunar.isLeapMonth,
+      month: lunar.lunarMonth,
+    };
   };
 
   return (
@@ -127,7 +131,7 @@ export function CalendarGrid({
           const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
           const daySchedules = getSchedulesForDate(date);
           const holiday = getHolidayForDate(date);
-          const lunarDay = getLunarDay(date);
+          const lunarInfo = getLunarInfo(date);
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const dayOfWeek = date.getDay();
@@ -158,9 +162,10 @@ export function CalendarGrid({
                 >
                   {date.getDate()}
                 </div>
-                {lunarDay && isCurrentMonth && (
+                {lunarInfo && isCurrentMonth && (
                   <span className="text-[10px] text-muted-foreground">
-                    {lunarDay === 1 ? '초1' : lunarDay}
+                    {lunarInfo.isLeapMonth ? '윤' : ''}
+                    {lunarInfo.day === 1 ? `${lunarInfo.month}.1` : lunarInfo.day}
                   </span>
                 )}
               </div>
