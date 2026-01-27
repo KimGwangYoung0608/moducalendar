@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,14 +24,19 @@ const colorClasses = [
 ];
 
 export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsModalProps) {
-  const [users, setUsers] = useState<User[]>(settings.users);
-  const [categories, setCategories] = useState<Category[]>(settings.categories);
+  const [users, setUsers] = useState<User[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const wasOpenRef = useRef(false);
 
-  // 설정이 변경될 때 로컬 상태 업데이트 (Firebase에서 로드된 데이터 반영)
+  // 모달이 열릴 때만 초기값 설정 (닫혀있다가 열릴 때)
   useEffect(() => {
-    setUsers(settings.users);
-    setCategories(settings.categories);
-  }, [settings]);
+    if (isOpen && !wasOpenRef.current) {
+      // 모달이 처음 열릴 때 설정값을 깊은 복사로 가져옴
+      setUsers(JSON.parse(JSON.stringify(settings.users)));
+      setCategories(JSON.parse(JSON.stringify(settings.categories)));
+    }
+    wasOpenRef.current = isOpen;
+  }, [isOpen, settings]);
 
   if (!isOpen) return null;
 
@@ -43,20 +48,20 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
       name: `사용자${users.length + 1}`,
       colorIndex: (users.length % 8) + 1,
     };
-    setUsers([...users, newUser]);
+    setUsers(prevUsers => [...prevUsers, newUser]);
   };
 
   const handleRemoveUser = (id: string) => {
     if (users.length <= 1) return;
-    setUsers(users.filter(u => u.id !== id));
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== id));
   };
 
   const handleUserNameChange = (id: string, name: string) => {
-    setUsers(users.map(u => (u.id === id ? { ...u, name } : u)));
+    setUsers(prevUsers => prevUsers.map(u => (u.id === id ? { ...u, name } : u)));
   };
 
   const handleUserColorChange = (id: string, colorIndex: number) => {
-    setUsers(users.map(u => (u.id === id ? { ...u, colorIndex } : u)));
+    setUsers(prevUsers => prevUsers.map(u => (u.id === id ? { ...u, colorIndex } : u)));
   };
 
   const handleAddCategory = (e: React.MouseEvent) => {
@@ -67,20 +72,20 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
       name: `카테고리${categories.length + 1}`,
       colorIndex: (categories.length % 8) + 1,
     };
-    setCategories([...categories, newCategory]);
+    setCategories(prevCategories => [...prevCategories, newCategory]);
   };
 
   const handleRemoveCategory = (id: string) => {
     if (categories.length <= 1) return;
-    setCategories(categories.filter(c => c.id !== id));
+    setCategories(prevCategories => prevCategories.filter(c => c.id !== id));
   };
 
   const handleCategoryNameChange = (id: string, name: string) => {
-    setCategories(categories.map(c => (c.id === id ? { ...c, name } : c)));
+    setCategories(prevCategories => prevCategories.map(c => (c.id === id ? { ...c, name } : c)));
   };
 
   const handleCategoryColorChange = (id: string, colorIndex: number) => {
-    setCategories(categories.map(c => (c.id === id ? { ...c, colorIndex } : c)));
+    setCategories(prevCategories => prevCategories.map(c => (c.id === id ? { ...c, colorIndex } : c)));
   };
 
   const handleSave = () => {
@@ -88,12 +93,19 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
     onClose();
   };
 
+  const handleCancel = () => {
+    // 취소 시 원래 설정으로 복원
+    setUsers(JSON.parse(JSON.stringify(settings.users)));
+    setCategories(JSON.parse(JSON.stringify(settings.categories)));
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={handleCancel} />
       <div className="relative bg-card rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <button
-          onClick={onClose}
+          onClick={handleCancel}
           className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
         >
           <X className="h-5 w-5" />
@@ -119,7 +131,12 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
                       <button
                         key={colorIndex}
-                        onClick={() => handleUserColorChange(user.id, colorIndex)}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleUserColorChange(user.id, colorIndex);
+                        }}
                         className={`w-6 h-6 rounded-full ${colorClasses[colorIndex - 1]} ${
                           user.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
                         }`}
@@ -129,7 +146,11 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleRemoveUser(user.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRemoveUser(user.id);
+                    }}
                     disabled={users.length <= 1}
                     className="text-muted-foreground hover:text-destructive"
                   >
@@ -140,6 +161,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                   value={user.name}
                   onChange={(e) => handleUserNameChange(user.id, e.target.value)}
                   placeholder="사용자 이름"
+                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
             ))}
@@ -164,7 +186,12 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                     {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
                       <button
                         key={colorIndex}
-                        onClick={() => handleCategoryColorChange(category.id, colorIndex)}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleCategoryColorChange(category.id, colorIndex);
+                        }}
                         className={`w-6 h-6 rounded-full ${colorClasses[colorIndex - 1]} ${
                           category.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
                         }`}
@@ -174,7 +201,11 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleRemoveCategory(category.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRemoveCategory(category.id);
+                    }}
                     disabled={categories.length <= 1}
                     className="text-muted-foreground hover:text-destructive"
                   >
@@ -185,6 +216,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                   value={category.name}
                   onChange={(e) => handleCategoryNameChange(category.id, e.target.value)}
                   placeholder="카테고리 이름"
+                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
             ))}
@@ -192,7 +224,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">
+          <Button variant="outline" onClick={handleCancel} className="flex-1">
             취소
           </Button>
           <Button onClick={handleSave} className="flex-1">
