@@ -35,7 +35,9 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
 
   if (!isOpen) return null;
 
-  const handleAddUser = () => {
+  const handleAddUser = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     const newUser: User = {
       id: Date.now().toString(),
       name: `사용자${users.length + 1}`,
@@ -57,7 +59,9 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
     setUsers(users.map(u => (u.id === id ? { ...u, colorIndex } : u)));
   };
 
-  const handleAddCategory = () => {
+  const handleAddCategory = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     const newCategory: Category = {
       id: Date.now().toString(),
       name: `카테고리${categories.length + 1}`,
@@ -87,7 +91,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-card rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-card rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
