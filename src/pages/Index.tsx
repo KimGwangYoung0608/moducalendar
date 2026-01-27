@@ -20,6 +20,7 @@ const Index = () => {
     updateSettings,
     addSchedule,
     deleteSchedule,
+    toggleScheduleComplete,
     refreshData,
   } = useCalendarStore();
 
@@ -238,6 +239,7 @@ const Index = () => {
               users={settings.users}
               categories={settings.categories}
               onDelete={deleteSchedule}
+              onToggleComplete={toggleScheduleComplete}
             />
           </div>
         )}

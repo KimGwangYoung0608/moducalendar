@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { CalendarPlus, X } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { CalendarPlus, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,10 +31,58 @@ export function LunarConverter({ onAddToCalendar }: LunarConverterProps) {
     lunarDay: number;
   } | null>(null);
 
+  // Refs for auto-focus
+  const yearRef = useRef<HTMLInputElement>(null);
+  const monthRef = useRef<HTMLInputElement>(null);
+  const dayRef = useRef<HTMLInputElement>(null);
+
   // Modal state for name input
   const [showNameModal, setShowNameModal] = useState(false);
   const [pendingAdd, setPendingAdd] = useState<{ isLunar: boolean } | null>(null);
   const [nameInput, setNameInput] = useState('');
+
+  // Reset function for refresh button
+  const handleReset = useCallback(() => {
+    setYear('');
+    setMonth('');
+    setDay('');
+    setResult(null);
+    setShowNameModal(false);
+    setPendingAdd(null);
+    setNameInput('');
+    // Focus on year input after reset
+    setTimeout(() => {
+      yearRef.current?.focus();
+    }, 100);
+  }, []);
+
+  // Auto-focus handlers
+  const handleYearChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setYear(value);
+    // Auto-move to month when 4 digits entered
+    if (value.length === 4 && /^\d{4}$/.test(value)) {
+      monthRef.current?.focus();
+    }
+  };
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setMonth(value);
+    // Auto-move to day when valid month entered (1-12)
+    const numValue = parseInt(value);
+    if (
+      (value.length === 2 && numValue >= 1 && numValue <= 12) ||
+      (value.length === 1 && numValue >= 2 && numValue <= 9)
+    ) {
+      dayRef.current?.focus();
+    }
+  };
+
+  const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDay(value);
+  };
 
   const handleConvert = () => {
     const y = parseInt(year);
@@ -110,42 +158,57 @@ export function LunarConverter({ onAddToCalendar }: LunarConverterProps) {
     <>
       <Card className="mt-6">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">음력 변환기</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">음력 변환기</CardTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleReset}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              title="새로고침"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2 items-end">
             <div className="flex-1">
               <Label htmlFor="conv-year" className="text-xs">년</Label>
               <Input
+                ref={yearRef}
                 id="conv-year"
                 type="number"
                 placeholder="1990"
                 value={year}
-                onChange={(e) => setYear(e.target.value)}
+                onChange={handleYearChange}
+                maxLength={4}
               />
             </div>
             <div className="flex-1">
               <Label htmlFor="conv-month" className="text-xs">월</Label>
               <Input
+                ref={monthRef}
                 id="conv-month"
                 type="number"
                 placeholder="1"
                 min={1}
                 max={12}
                 value={month}
-                onChange={(e) => setMonth(e.target.value)}
+                onChange={handleMonthChange}
               />
             </div>
             <div className="flex-1">
               <Label htmlFor="conv-day" className="text-xs">일</Label>
               <Input
+                ref={dayRef}
                 id="conv-day"
                 type="number"
                 placeholder="1"
                 min={1}
                 max={31}
                 value={day}
-                onChange={(e) => setDay(e.target.value)}
+                onChange={handleDayChange}
               />
             </div>
             <Button onClick={handleConvert}>변환</Button>

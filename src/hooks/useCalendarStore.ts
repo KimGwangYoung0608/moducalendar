@@ -184,6 +184,36 @@ export function useCalendarStore() {
     }
   };
 
+  // Toggle schedule completion status
+  const toggleScheduleComplete = async (id: string) => {
+    const schedule = schedules.find(s => s.id === id);
+    if (!schedule) return;
+
+    const newIsCompleted = !schedule.isCompleted;
+    
+    // Optimistic update
+    const previousSchedules = schedules;
+    setSchedules(prev => prev.map(s => 
+      s.id === id ? { ...s, isCompleted: newIsCompleted } : s
+    ));
+    
+    try {
+      await setDoc(doc(db, SCHEDULES_COLLECTION, id), {
+        title: schedule.title,
+        description: schedule.description,
+        date: schedule.date,
+        userId: schedule.userId,
+        categoryId: schedule.categoryId,
+        createdAt: schedule.createdAt,
+        isCompleted: newIsCompleted,
+      });
+    } catch (error) {
+      console.error('Failed to toggle schedule completion in Firebase:', error);
+      // Rollback on error
+      setSchedules(previousSchedules);
+    }
+  };
+
   const getSchedulesByDate = (date: string) => {
     return schedules.filter(s => s.date === date);
   };
@@ -204,6 +234,7 @@ export function useCalendarStore() {
     updateSettings,
     addSchedule,
     deleteSchedule,
+    toggleScheduleComplete,
     getSchedulesByDate,
     getUserById,
     getCategoryById,

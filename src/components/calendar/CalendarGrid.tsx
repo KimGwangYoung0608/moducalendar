@@ -181,12 +181,14 @@ export function CalendarGrid({
               <div className="space-y-0.5 mt-1">
                 {daySchedules.slice(0, 3).map((schedule) => {
                   const isBirthday = schedule.title.includes('생일') || schedule.title.startsWith('🎂');
+                  const isCompleted = schedule.isCompleted ?? false;
                   return (
                     <div
                       key={schedule.id}
                       className={cn(
                         "text-[10px] text-white px-1 py-0.5 rounded truncate",
-                        getUserColor(schedule.userId)
+                        getUserColor(schedule.userId),
+                        isCompleted && "line-through opacity-60"
                       )}
                     >
                       {isBirthday ? '🎂 ' : ''}{schedule.title.replace(/^🎂\s*/, '')}

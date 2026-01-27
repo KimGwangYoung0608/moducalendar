@@ -18,6 +18,7 @@ export interface Schedule {
   userId: string;
   categoryId: string;
   createdAt: string;
+  isCompleted?: boolean; // 완료 여부
 }
 
 export interface CalendarSettings {

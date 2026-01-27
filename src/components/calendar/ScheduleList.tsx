@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Schedule, User, Category } from '@/types/calendar';
 import { solarToLunar } from '@/utils/lunarCalendar';
+import { cn } from '@/lib/utils';
 
 interface ScheduleListProps {
   schedules: Schedule[];
   users: User[];
   categories: Category[];
   onDelete: (id: string) => void;
+  onToggleComplete: (id: string) => void;
 }
 
 const colorClasses = [
@@ -22,7 +24,7 @@ const colorClasses = [
   'bg-[hsl(280,68%,50%)]',
 ];
 
-export function ScheduleList({ schedules, users, categories, onDelete }: ScheduleListProps) {
+export function ScheduleList({ schedules, users, categories, onDelete, onToggleComplete }: ScheduleListProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const getUserColor = (userId: string) => {
     const user = users.find(u => u.id === userId);
@@ -71,10 +73,14 @@ export function ScheduleList({ schedules, users, categories, onDelete }: Schedul
     <div className="space-y-2">
       {schedules.map((schedule) => {
         const isBirthday = isBirthdaySchedule(schedule);
+        const isCompleted = schedule.isCompleted ?? false;
         return (
           <div
             key={schedule.id}
-            className="bg-card border border-border rounded-lg p-3 flex items-start gap-3"
+            className={cn(
+              "bg-card border border-border rounded-lg p-3 flex items-start gap-3 transition-opacity",
+              isCompleted && "opacity-60"
+            )}
           >
             <div className={`w-1 h-full min-h-[40px] rounded-full ${getUserColor(schedule.userId)}`} />
             <div className="flex-1 min-w-0">
@@ -84,28 +90,55 @@ export function ScheduleList({ schedules, users, categories, onDelete }: Schedul
                     {getCategoryName(schedule.categoryId)}
                   </span>
                 )}
-                <span className="font-medium truncate">{schedule.title}</span>
+                <span className={cn(
+                  "font-medium truncate",
+                  isCompleted && "line-through text-muted-foreground"
+                )}>
+                  {schedule.title}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
                   {getUserName(schedule.userId)}
                 </span>
-                <span className="text-muted-foreground">
+                <span className={cn(
+                  "text-muted-foreground",
+                  isCompleted && "line-through"
+                )}>
                   {formatDateWithLunar(schedule.date)}
                 </span>
               </div>
               {schedule.description && (
-                <p className="text-sm text-muted-foreground mt-2">{schedule.description}</p>
+                <p className={cn(
+                  "text-sm text-muted-foreground mt-2",
+                  isCompleted && "line-through"
+                )}>
+                  {schedule.description}
+                </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDeleteConfirmId(schedule.id)}
-              className="text-muted-foreground hover:text-destructive shrink-0"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onToggleComplete(schedule.id)}
+                className={cn(
+                  "text-muted-foreground hover:text-green-600",
+                  isCompleted && "text-green-600 bg-green-100 hover:bg-green-200"
+                )}
+                title={isCompleted ? "완료 취소" : "완료"}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setDeleteConfirmId(schedule.id)}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         );
       })}
