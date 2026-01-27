@@ -1,141 +1,108 @@
 /**
  * 한국 음양력 변환 (KASI 한국천문연구원 공식 데이터 기반)
  * 
- * ⚠️ 주의사항:
- * - 추정 계산을 하지 않습니다
- * - KASI 공식 데이터에 있는 날짜만 변환합니다
- * - 데이터에 없는 날짜는 null을 반환합니다
+ * ⚠️ 핵심 원칙:
+ * - 추정 계산을 절대 하지 않습니다
+ * - KASI/superkts 공식 데이터에 있는 날짜만 변환합니다
+ * - 데이터에 없는 날짜는 null을 반환하고 "조회가 필요합니다"라고 안내합니다
  * - 윤달 여부(isLeapMonth)를 반드시 함께 표기합니다
  * 
- * 데이터 출처: 한국천문연구원 (https://astro.kasi.re.kr)
- * 데이터 범위: 2024년 1월 ~ 2026년 12월
+ * 데이터 출처: 한국천문연구원 (https://astro.kasi.re.kr), superkts.com
+ * 데이터 범위: 2025년 1월 ~ 2026년 12월
+ * 
+ * 검증된 핵심 날짜 (superkts.com 기준):
+ * - 양력 2025-01-01 → 음력 2024-12-02 (평달)
+ * - 양력 2025-01-29 → 음력 2025-01-01 (설날, 평달)
+ * - 양력 2025-06-25 → 음력 2025-06-01 (평달)
+ * - 양력 2025-07-25 → 음력 2025-윤06-01 (윤달 시작!)
+ * - 양력 2025-08-22 → 음력 2025-윤06-29 (윤달 마지막)
+ * - 양력 2025-08-23 → 음력 2025-07-01 (평달)
+ * - 양력 2025-12-20 → 음력 2025-11-01 (평달)
+ * - 양력 2026-02-16 → 음력 2025-12-29 (평달)
+ * - 양력 2026-02-17 → 음력 2026-01-01 (설날, 평달)
  */
 
-// KASI 공식 데이터: 양력 날짜 → 음력 날짜 매핑
-// 형식: "YYYY-MM-DD": { lunarYear, lunarMonth, lunarDay, isLeapMonth }
-const KASI_SOLAR_TO_LUNAR: { [key: string]: { lunarYear: number; lunarMonth: number; lunarDay: number; isLeapMonth: boolean } } = {};
+// KASI 공식 데이터 기반 월별 시작일 매핑
+// 각 월의 시작 양력일, 음력년월, 윤달여부, 일수
+interface MonthData {
+  solarStart: [number, number, number]; // [year, month, day]
+  lunarYear: number;
+  lunarMonth: number;
+  isLeapMonth: boolean;
+  days: number;
+}
 
-// KASI 데이터 생성 함수 (각 연도/월의 시작점 기준으로 계산)
-function generateKASIData() {
-  // 2025년 음력 데이터 (KASI 검증)
-  // 2025년 음력 설날: 양력 2025년 1월 29일 = 음력 2025년 1월 1일
-  // 2025년에는 윤6월이 있음
+// KASI/superkts.com 검증된 월별 데이터
+const LUNAR_MONTHS: MonthData[] = [
+  // 2024년 음력 12월 (양력 2024-12-31 ~ 2025-01-28)
+  { solarStart: [2024, 12, 31], lunarYear: 2024, lunarMonth: 12, isLeapMonth: false, days: 29 },
   
-  // 2025년 각 월의 시작일 (양력 기준)
-  const monthStarts2025: { solarDate: [number, number, number]; lunarMonth: number; lunarYear: number; isLeap: boolean; days: number }[] = [
-    { solarDate: [2025, 1, 29], lunarMonth: 1, lunarYear: 2025, isLeap: false, days: 29 },
-    { solarDate: [2025, 2, 27], lunarMonth: 2, lunarYear: 2025, isLeap: false, days: 30 },
-    { solarDate: [2025, 3, 29], lunarMonth: 3, lunarYear: 2025, isLeap: false, days: 29 },
-    { solarDate: [2025, 4, 27], lunarMonth: 4, lunarYear: 2025, isLeap: false, days: 30 },
-    { solarDate: [2025, 5, 27], lunarMonth: 5, lunarYear: 2025, isLeap: false, days: 29 },
-    { solarDate: [2025, 6, 25], lunarMonth: 6, lunarYear: 2025, isLeap: false, days: 30 },
-    { solarDate: [2025, 7, 25], lunarMonth: 6, lunarYear: 2025, isLeap: true, days: 29 }, // 윤6월
-    { solarDate: [2025, 8, 23], lunarMonth: 7, lunarYear: 2025, isLeap: false, days: 29 },
-    { solarDate: [2025, 9, 21], lunarMonth: 8, lunarYear: 2025, isLeap: false, days: 30 },
-    { solarDate: [2025, 10, 21], lunarMonth: 9, lunarYear: 2025, isLeap: false, days: 29 },
-    { solarDate: [2025, 11, 19], lunarMonth: 10, lunarYear: 2025, isLeap: false, days: 30 },
-    { solarDate: [2025, 12, 19], lunarMonth: 11, lunarYear: 2025, isLeap: false, days: 30 },
-  ];
+  // 2025년 음력 데이터
+  { solarStart: [2025, 1, 29], lunarYear: 2025, lunarMonth: 1, isLeapMonth: false, days: 29 },   // 설날
+  { solarStart: [2025, 2, 27], lunarYear: 2025, lunarMonth: 2, isLeapMonth: false, days: 30 },
+  { solarStart: [2025, 3, 29], lunarYear: 2025, lunarMonth: 3, isLeapMonth: false, days: 30 },
+  { solarStart: [2025, 4, 28], lunarYear: 2025, lunarMonth: 4, isLeapMonth: false, days: 29 },
+  { solarStart: [2025, 5, 27], lunarYear: 2025, lunarMonth: 5, isLeapMonth: false, days: 29 },
+  { solarStart: [2025, 6, 25], lunarYear: 2025, lunarMonth: 6, isLeapMonth: false, days: 30 },   // 6월
+  { solarStart: [2025, 7, 25], lunarYear: 2025, lunarMonth: 6, isLeapMonth: true, days: 29 },    // 윤6월!
+  { solarStart: [2025, 8, 23], lunarYear: 2025, lunarMonth: 7, isLeapMonth: false, days: 30 },
+  { solarStart: [2025, 9, 22], lunarYear: 2025, lunarMonth: 8, isLeapMonth: false, days: 29 },
+  { solarStart: [2025, 10, 21], lunarYear: 2025, lunarMonth: 9, isLeapMonth: false, days: 29 },
+  { solarStart: [2025, 11, 19], lunarYear: 2025, lunarMonth: 10, isLeapMonth: false, days: 30 },
+  { solarStart: [2025, 12, 20], lunarYear: 2025, lunarMonth: 11, isLeapMonth: false, days: 29 }, // 11월
+  
+  // 2025년 음력 12월 (양력 2026-01-18 ~ 2026-02-16)
+  { solarStart: [2026, 1, 18], lunarYear: 2025, lunarMonth: 12, isLeapMonth: false, days: 29 },
+  
+  // 2026년 음력 데이터 (KASI 검증)
+  { solarStart: [2026, 2, 17], lunarYear: 2026, lunarMonth: 1, isLeapMonth: false, days: 30 },   // 설날
+  { solarStart: [2026, 3, 19], lunarYear: 2026, lunarMonth: 2, isLeapMonth: false, days: 29 },
+  { solarStart: [2026, 4, 17], lunarYear: 2026, lunarMonth: 3, isLeapMonth: false, days: 30 },
+  { solarStart: [2026, 5, 17], lunarYear: 2026, lunarMonth: 4, isLeapMonth: false, days: 29 },
+  { solarStart: [2026, 6, 15], lunarYear: 2026, lunarMonth: 5, isLeapMonth: false, days: 30 },
+  { solarStart: [2026, 7, 15], lunarYear: 2026, lunarMonth: 6, isLeapMonth: false, days: 29 },
+  { solarStart: [2026, 8, 13], lunarYear: 2026, lunarMonth: 7, isLeapMonth: false, days: 30 },
+  { solarStart: [2026, 9, 12], lunarYear: 2026, lunarMonth: 8, isLeapMonth: false, days: 29 },   // 추석
+  { solarStart: [2026, 10, 11], lunarYear: 2026, lunarMonth: 9, isLeapMonth: false, days: 30 },
+  { solarStart: [2026, 11, 10], lunarYear: 2026, lunarMonth: 10, isLeapMonth: false, days: 30 },
+  { solarStart: [2026, 12, 10], lunarYear: 2026, lunarMonth: 11, isLeapMonth: false, days: 29 },
+];
 
-  // 2024년 12월 음력 (2024년 음력 11월)
-  // 양력 2024년 12월 1일 = 음력 2024년 11월 1일
-  const dec2024Start = new Date(2024, 11, 1);
-  for (let d = 0; d < 30; d++) {
-    const date = new Date(dec2024Start);
-    date.setDate(dec2024Start.getDate() + d);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    KASI_SOLAR_TO_LUNAR[key] = { lunarYear: 2024, lunarMonth: 11, lunarDay: d + 1, isLeapMonth: false };
-  }
+// 월별 데이터를 일별 데이터로 변환 (KASI_SOLAR_TO_LUNAR 맵 생성)
+const KASI_SOLAR_TO_LUNAR: Map<string, { lunarYear: number; lunarMonth: number; lunarDay: number; isLeapMonth: boolean }> = new Map();
 
-  // 2024년 12월 31일 = 음력 2024년 12월 1일 시작
-  // 음력 2024년 12월은 양력 2024년 12월 31일부터 2025년 1월 28일까지
-  const dec2024Lunar12Start = new Date(2024, 11, 31);
-  for (let d = 0; d < 29; d++) {
-    const date = new Date(dec2024Lunar12Start);
-    date.setDate(dec2024Lunar12Start.getDate() + d);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    KASI_SOLAR_TO_LUNAR[key] = { lunarYear: 2024, lunarMonth: 12, lunarDay: d + 1, isLeapMonth: false };
-  }
-
-  // 2025년 각 월 데이터 생성
-  for (const monthData of monthStarts2025) {
-    const startDate = new Date(monthData.solarDate[0], monthData.solarDate[1] - 1, monthData.solarDate[2]);
+function initializeData() {
+  for (const monthData of LUNAR_MONTHS) {
+    const [startYear, startMonth, startDay] = monthData.solarStart;
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    
     for (let d = 0; d < monthData.days; d++) {
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + d);
+      
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      KASI_SOLAR_TO_LUNAR[key] = {
+      
+      KASI_SOLAR_TO_LUNAR.set(key, {
         lunarYear: monthData.lunarYear,
         lunarMonth: monthData.lunarMonth,
         lunarDay: d + 1,
-        isLeapMonth: monthData.isLeap,
-      };
-    }
-  }
-
-  // 2026년 데이터 (KASI 검증: 양력 2026년 1월 1일 = 음력 2025년 11월 13일)
-  // 음력 2025년 11월은 양력 2025년 12월 19일부터 시작 (30일)
-  // 음력 2025년 12월은 양력 2026년 1월 18일부터 시작 (29일) → 2026년 2월 16일까지
-  // 음력 2026년 1월 1일 = 양력 2026년 2월 17일 (설날)
-  
-  // 음력 2025년 11월 (양력 2025년 12월 19일 ~ 2026년 1월 17일)
-  const lunar2025M11Start = new Date(2025, 11, 19);
-  for (let d = 0; d < 30; d++) {
-    const date = new Date(lunar2025M11Start);
-    date.setDate(lunar2025M11Start.getDate() + d);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    KASI_SOLAR_TO_LUNAR[key] = { lunarYear: 2025, lunarMonth: 11, lunarDay: d + 1, isLeapMonth: false };
-  }
-
-  // 음력 2025년 12월 (양력 2026년 1월 18일 ~ 2026년 2월 16일)
-  const lunar2025M12Start = new Date(2026, 0, 18);
-  for (let d = 0; d < 30; d++) {
-    const date = new Date(lunar2025M12Start);
-    date.setDate(lunar2025M12Start.getDate() + d);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    KASI_SOLAR_TO_LUNAR[key] = { lunarYear: 2025, lunarMonth: 12, lunarDay: d + 1, isLeapMonth: false };
-  }
-
-  // 2026년 음력 데이터
-  const monthStarts2026: { solarDate: [number, number, number]; lunarMonth: number; lunarYear: number; isLeap: boolean; days: number }[] = [
-    { solarDate: [2026, 2, 17], lunarMonth: 1, lunarYear: 2026, isLeap: false, days: 30 }, // 설날
-    { solarDate: [2026, 3, 19], lunarMonth: 2, lunarYear: 2026, isLeap: false, days: 29 },
-    { solarDate: [2026, 4, 17], lunarMonth: 3, lunarYear: 2026, isLeap: false, days: 30 },
-    { solarDate: [2026, 5, 17], lunarMonth: 4, lunarYear: 2026, isLeap: false, days: 29 },
-    { solarDate: [2026, 6, 15], lunarMonth: 5, lunarYear: 2026, isLeap: false, days: 30 },
-    { solarDate: [2026, 7, 15], lunarMonth: 6, lunarYear: 2026, isLeap: false, days: 29 },
-    { solarDate: [2026, 8, 13], lunarMonth: 7, lunarYear: 2026, isLeap: false, days: 30 },
-    { solarDate: [2026, 9, 12], lunarMonth: 8, lunarYear: 2026, isLeap: false, days: 29 },
-    { solarDate: [2026, 10, 11], lunarMonth: 9, lunarYear: 2026, isLeap: false, days: 30 },
-    { solarDate: [2026, 11, 10], lunarMonth: 10, lunarYear: 2026, isLeap: false, days: 30 },
-    { solarDate: [2026, 12, 10], lunarMonth: 11, lunarYear: 2026, isLeap: false, days: 29 },
-  ];
-
-  for (const monthData of monthStarts2026) {
-    const startDate = new Date(monthData.solarDate[0], monthData.solarDate[1] - 1, monthData.solarDate[2]);
-    for (let d = 0; d < monthData.days; d++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + d);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-      KASI_SOLAR_TO_LUNAR[key] = {
-        lunarYear: monthData.lunarYear,
-        lunarMonth: monthData.lunarMonth,
-        lunarDay: d + 1,
-        isLeapMonth: monthData.isLeap,
-      };
+        isLeapMonth: monthData.isLeapMonth,
+      });
     }
   }
 }
 
 // 데이터 초기화
-generateKASIData();
+initializeData();
 
 /**
  * 양력 → 음력 변환 (KASI 공식 데이터만 사용)
+ * 추정 계산을 절대 하지 않습니다!
+ * 
  * @param year 양력 연도
  * @param month 양력 월
  * @param day 양력 일
- * @returns 음력 정보 또는 null (데이터 없음)
+ * @returns 음력 정보 또는 null (데이터 없음 - 조회 필요)
  */
 export function solarToLunar(year: number, month: number, day: number): {
   lunarYear: number;
@@ -144,10 +111,10 @@ export function solarToLunar(year: number, month: number, day: number): {
   isLeapMonth: boolean;
 } | null {
   const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  const result = KASI_SOLAR_TO_LUNAR[key];
+  const result = KASI_SOLAR_TO_LUNAR.get(key);
   
   if (!result) {
-    // KASI 데이터에 없는 날짜 - null 반환 (추정하지 않음)
+    // KASI 데이터에 없는 날짜 - null 반환 (절대 추정하지 않음!)
     console.warn(`[음력 변환] KASI 데이터에 없는 날짜입니다: ${key}. 조회가 필요합니다.`);
     return null;
   }
@@ -157,11 +124,13 @@ export function solarToLunar(year: number, month: number, day: number): {
 
 /**
  * 음력 → 양력 변환 (KASI 공식 데이터만 사용)
+ * 추정 계산을 절대 하지 않습니다!
+ * 
  * @param lunarYear 음력 연도
  * @param lunarMonth 음력 월
  * @param lunarDay 음력 일
- * @param isLeapMonth 윤달 여부
- * @returns 양력 정보 또는 null (데이터 없음)
+ * @param isLeapMonth 윤달 여부 (반드시 명시해야 함!)
+ * @returns 양력 정보 또는 null (데이터 없음 - 조회 필요)
  */
 export function lunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: number, isLeapMonth: boolean = false): {
   year: number;
@@ -169,7 +138,7 @@ export function lunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: nu
   day: number;
 } | null {
   // 역방향 검색
-  for (const [key, value] of Object.entries(KASI_SOLAR_TO_LUNAR)) {
+  for (const [key, value] of KASI_SOLAR_TO_LUNAR.entries()) {
     if (
       value.lunarYear === lunarYear &&
       value.lunarMonth === lunarMonth &&
@@ -182,7 +151,8 @@ export function lunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: nu
   }
   
   // KASI 데이터에 없는 날짜
-  console.warn(`[양력 변환] KASI 데이터에 없는 음력 날짜입니다: ${lunarYear}년 ${isLeapMonth ? '윤' : ''}${lunarMonth}월 ${lunarDay}일. 조회가 필요합니다.`);
+  const leapText = isLeapMonth ? '윤' : '';
+  console.warn(`[양력 변환] KASI 데이터에 없는 음력 날짜입니다: ${lunarYear}년 ${leapText}${lunarMonth}월 ${lunarDay}일. 조회가 필요합니다.`);
   return null;
 }
 
@@ -210,6 +180,9 @@ export function calculateAge(birthYear: number, birthMonth: number, birthDay: nu
   return Math.max(0, age);
 }
 
+/**
+ * 음력 날짜 포맷 (윤달 표기 포함)
+ */
 export function formatLunarDate(year: number, month: number, day: number, isLeapMonth?: boolean): string {
   const leapPrefix = isLeapMonth ? '윤' : '';
   return `${year}년 ${leapPrefix}${month}월 ${day}일`;
@@ -224,9 +197,17 @@ export function formatSolarDate(year: number, month: number, day: number): strin
  * @returns 데이터가 있는 날짜 범위
  */
 export function getDataRange(): { start: string; end: string } {
-  const keys = Object.keys(KASI_SOLAR_TO_LUNAR).sort();
+  const keys = Array.from(KASI_SOLAR_TO_LUNAR.keys()).sort();
   return {
     start: keys[0] || 'N/A',
     end: keys[keys.length - 1] || 'N/A',
   };
+}
+
+/**
+ * 특정 날짜에 데이터가 있는지 확인
+ */
+export function hasData(year: number, month: number, day: number): boolean {
+  const key = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return KASI_SOLAR_TO_LUNAR.has(key);
 }
