@@ -154,14 +154,21 @@ export function useCalendarStore() {
     setSchedules(prev => [...prev, newSchedule]);
     
     try {
-      await setDoc(doc(db, SCHEDULES_COLLECTION, newSchedule.id), {
+      const scheduleData: Record<string, unknown> = {
         title: newSchedule.title,
         description: newSchedule.description,
         date: newSchedule.date,
         userId: newSchedule.userId,
         categoryId: newSchedule.categoryId,
         createdAt: newSchedule.createdAt,
-      });
+      };
+      
+      // Add files if present
+      if (newSchedule.files && newSchedule.files.length > 0) {
+        scheduleData.files = newSchedule.files;
+      }
+      
+      await setDoc(doc(db, SCHEDULES_COLLECTION, newSchedule.id), scheduleData);
     } catch (error) {
       console.error('Failed to add schedule to Firebase:', error);
       // Rollback on error
@@ -198,7 +205,7 @@ export function useCalendarStore() {
     ));
     
     try {
-      await setDoc(doc(db, SCHEDULES_COLLECTION, id), {
+      const scheduleData: Record<string, unknown> = {
         title: schedule.title,
         description: schedule.description,
         date: schedule.date,
@@ -206,7 +213,14 @@ export function useCalendarStore() {
         categoryId: schedule.categoryId,
         createdAt: schedule.createdAt,
         isCompleted: newIsCompleted,
-      });
+      };
+      
+      // Preserve files if present
+      if (schedule.files && schedule.files.length > 0) {
+        scheduleData.files = schedule.files;
+      }
+      
+      await setDoc(doc(db, SCHEDULES_COLLECTION, id), scheduleData);
     } catch (error) {
       console.error('Failed to toggle schedule completion in Firebase:', error);
       // Rollback on error
@@ -228,7 +242,7 @@ export function useCalendarStore() {
     ));
     
     try {
-      await setDoc(doc(db, SCHEDULES_COLLECTION, id), {
+      const scheduleData: Record<string, unknown> = {
         title: updatedSchedule.title,
         description: updatedSchedule.description,
         date: updatedSchedule.date,
@@ -236,7 +250,14 @@ export function useCalendarStore() {
         categoryId: updatedSchedule.categoryId,
         createdAt: updatedSchedule.createdAt,
         isCompleted: updatedSchedule.isCompleted ?? false,
-      });
+      };
+      
+      // Add files if present
+      if (updatedSchedule.files && updatedSchedule.files.length > 0) {
+        scheduleData.files = updatedSchedule.files;
+      }
+      
+      await setDoc(doc(db, SCHEDULES_COLLECTION, id), scheduleData);
     } catch (error) {
       console.error('Failed to update schedule in Firebase:', error);
       // Rollback on error

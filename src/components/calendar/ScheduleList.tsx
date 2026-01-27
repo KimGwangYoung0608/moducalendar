@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Trash2, Check, Pencil, X } from 'lucide-react';
+import { Trash2, Check, Pencil, X, Image, FileText, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Schedule, User, Category } from '@/types/calendar';
+import { Schedule, User, Category, ScheduleFile } from '@/types/calendar';
 import { solarToLunar } from '@/utils/lunarCalendar';
 import { cn } from '@/lib/utils';
 
@@ -33,8 +33,13 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
   const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editDate, setEditDate] = useState('');
   const [editUserId, setEditUserId] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
+  const [editFiles, setEditFiles] = useState<ScheduleFile[]>([]);
+  
+  // Image/PDF viewer state
+  const [viewingFile, setViewingFile] = useState<ScheduleFile | null>(null);
 
   const getUserColor = (userId: string) => {
     const user = users.find(u => u.id === userId);
@@ -70,8 +75,10 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     setEditingSchedule(schedule);
     setEditTitle(schedule.title);
     setEditDescription(schedule.description);
+    setEditDate(schedule.date);
     setEditUserId(schedule.userId);
     setEditCategoryId(schedule.categoryId);
+    setEditFiles(schedule.files || []);
   };
 
   const handleEditSave = () => {
@@ -80,8 +87,10 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     onUpdate(editingSchedule.id, {
       title: editTitle,
       description: editDescription,
+      date: editDate,
       userId: editUserId,
       categoryId: editCategoryId,
+      files: editFiles,
     });
     
     setEditingSchedule(null);
@@ -91,8 +100,36 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     setEditingSchedule(null);
     setEditTitle('');
     setEditDescription('');
+    setEditDate('');
     setEditUserId('');
     setEditCategoryId('');
+    setEditFiles([]);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const fileType: 'image' | 'pdf' = file.type.includes('pdf') ? 'pdf' : 'image';
+        setEditFiles(prev => [...prev, {
+          name: file.name,
+          url: result,
+          type: fileType,
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setEditFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   if (schedules.length === 0) {
@@ -113,90 +150,153 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
       {schedules.map((schedule) => {
         const isBirthday = isBirthdaySchedule(schedule);
         const isCompleted = schedule.isCompleted ?? false;
+        const hasFiles = schedule.files && schedule.files.length > 0;
+        
         return (
           <div
             key={schedule.id}
             className={cn(
-              "bg-card border border-border rounded-lg p-3 flex items-start gap-3 transition-opacity",
+              "bg-card border border-border rounded-lg p-3 transition-opacity",
               isCompleted && "opacity-60"
             )}
           >
-            <div className={`w-1 h-full min-h-[40px] rounded-full ${getUserColor(schedule.userId)}`} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                {!isBirthday && (
-                  <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
-                    {getCategoryName(schedule.categoryId)}
+            <div className="flex items-start gap-3">
+              <div className={`w-1 min-h-[40px] rounded-full ${getUserColor(schedule.userId)}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {!isBirthday && (
+                    <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
+                      {getCategoryName(schedule.categoryId)}
+                    </span>
+                  )}
+                  <span className={cn(
+                    "font-medium",
+                    isCompleted && "line-through text-muted-foreground"
+                  )}>
+                    {schedule.title}
                   </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
+                    {getUserName(schedule.userId)}
+                  </span>
+                  <span className={cn(
+                    "text-muted-foreground",
+                    isCompleted && "line-through"
+                  )}>
+                    {formatDateWithLunar(schedule.date)}
+                  </span>
+                </div>
+                {schedule.description && (
+                  <p className={cn(
+                    "text-sm text-muted-foreground mt-2",
+                    isCompleted && "line-through"
+                  )}>
+                    {schedule.description}
+                  </p>
                 )}
-                <span className={cn(
-                  "font-medium truncate",
-                  isCompleted && "line-through text-muted-foreground"
-                )}>
-                  {schedule.title}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
-                  {getUserName(schedule.userId)}
-                </span>
-                <span className={cn(
-                  "text-muted-foreground",
-                  isCompleted && "line-through"
-                )}>
-                  {formatDateWithLunar(schedule.date)}
-                </span>
-              </div>
-              {schedule.description && (
-                <p className={cn(
-                  "text-sm text-muted-foreground mt-2",
-                  isCompleted && "line-through"
-                )}>
-                  {schedule.description}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleEditClick(schedule)}
-                className="text-muted-foreground hover:text-blue-600"
-                title="수정"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onToggleComplete(schedule.id)}
-                className={cn(
-                  "text-muted-foreground hover:text-green-600",
-                  isCompleted && "text-green-600 bg-green-100 hover:bg-green-200"
+                
+                {/* File attachments */}
+                {hasFiles && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {schedule.files!.map((file, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setViewingFile(file)}
+                        className="h-7 text-xs"
+                      >
+                        {file.type === 'image' ? (
+                          <Image className="h-3 w-3 mr-1" />
+                        ) : (
+                          <FileText className="h-3 w-3 mr-1" />
+                        )}
+                        {file.name.length > 15 ? file.name.substring(0, 15) + '...' : file.name}
+                      </Button>
+                    ))}
+                  </div>
                 )}
-                title={isCompleted ? "완료 취소" : "완료"}
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setDeleteConfirmId(schedule.id)}
-                className="text-muted-foreground hover:text-destructive"
-                title="삭제"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+                
+                {/* Action buttons - moved to bottom */}
+                <div className="flex items-center gap-1 mt-3 pt-2 border-t border-border">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEditClick(schedule)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Pencil className="h-3.5 w-3.5 mr-1" />
+                    수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onToggleComplete(schedule.id)}
+                    className={cn(
+                      "hover:bg-green-50",
+                      isCompleted ? "text-green-600 bg-green-50" : "text-muted-foreground"
+                    )}
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" />
+                    {isCompleted ? "완료됨" : "완료"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeleteConfirmId(schedule.id)}
+                    className="text-destructive hover:text-destructive hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    삭제
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         );
       })}
 
+      {/* File Viewer Modal */}
+      {viewingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setViewingFile(null)} />
+          <div className="relative bg-card rounded-xl shadow-xl max-w-4xl max-h-[90vh] mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <span className="font-medium truncate">{viewingFile.name}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewingFile(null)}
+                className="shrink-0"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
+              {viewingFile.type === 'image' ? (
+                <img 
+                  src={viewingFile.url} 
+                  alt={viewingFile.name}
+                  className="max-w-full h-auto mx-auto"
+                />
+              ) : (
+                <iframe 
+                  src={viewingFile.url}
+                  title={viewingFile.name}
+                  className="w-full h-[70vh]"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit Modal */}
       {editingSchedule && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={handleEditCancel} />
-          <div className="relative bg-card rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+          <div className="relative bg-card rounded-xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={handleEditCancel}
               className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
@@ -215,6 +315,20 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                   onChange={(e) => setEditTitle(e.target.value)}
                   placeholder="스케줄 제목"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-date">날짜</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -267,6 +381,58 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                       {category.name}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              {/* File upload section */}
+              <div className="space-y-2">
+                <Label>첨부 파일</Label>
+                <div className="flex flex-wrap gap-2">
+                  {editFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-1 bg-muted px-2 py-1 rounded text-sm">
+                      {file.type === 'image' ? (
+                        <Image className="h-3 w-3" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
+                      )}
+                      <span className="truncate max-w-[100px]">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFile(index)}
+                        className="text-muted-foreground hover:text-destructive ml-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-1 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded text-sm transition-colors">
+                      <Image className="h-4 w-4" />
+                      이미지 추가
+                    </div>
+                  </label>
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      multiple
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-1 px-3 py-1.5 bg-muted hover:bg-muted/80 rounded text-sm transition-colors">
+                      <FileText className="h-4 w-4" />
+                      PDF 추가
+                    </div>
+                  </label>
                 </div>
               </div>
 

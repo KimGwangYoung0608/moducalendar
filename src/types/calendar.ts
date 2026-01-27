@@ -10,6 +10,12 @@ export interface Category {
   colorIndex: number;
 }
 
+export interface ScheduleFile {
+  name: string;
+  url: string;
+  type: 'image' | 'pdf';
+}
+
 export interface Schedule {
   id: string;
   title: string;
@@ -19,6 +25,7 @@ export interface Schedule {
   categoryId: string;
   createdAt: string;
   isCompleted?: boolean; // 완료 여부
+  files?: ScheduleFile[]; // 첨부 파일 (이미지, PDF)
 }
 
 export interface CalendarSettings {

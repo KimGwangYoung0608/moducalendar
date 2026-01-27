@@ -10,7 +10,7 @@ import { LunarConverter } from '@/components/calendar/LunarConverter';
 import { useCalendarStore } from '@/hooks/useCalendarStore';
 import { getKoreanHolidays, getHolidayForDate } from '@/utils/koreanHolidays';
 import { solarToLunar } from '@/utils/lunarCalendar';
-import { Schedule } from '@/types/calendar';
+import { Schedule, ScheduleFile } from '@/types/calendar';
 
 // Helper function to get last Monday of a month
 const getLastMondayOfMonth = (year: number, month: number): Date => {
@@ -155,6 +155,7 @@ const Index = () => {
     description: string;
     userId: string;
     categoryId: string;
+    files?: ScheduleFile[];
   }) => {
     if (!selectedDate) return;
 
