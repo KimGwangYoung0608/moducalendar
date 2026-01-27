@@ -58,45 +58,97 @@ const Index = () => {
   
   const scheduleListRef = useRef<HTMLDivElement>(null);
 
-  // Generate monthly "후불제 정산정리" schedules
+  // Track if monthly settlement schedules have been initialized (use sessionStorage to persist across re-renders)
+  const settlementInitializedRef = useRef(false);
+  const isCheckingRef = useRef(false);
+
+  // Generate monthly "후불제 정산정리" schedules - runs only once per session
   useEffect(() => {
+    // Check sessionStorage to see if already initialized in this session
+    const sessionKey = 'settlement_initialized_' + new Date().toDateString();
+    if (sessionStorage.getItem(sessionKey) === 'true') {
+      settlementInitializedRef.current = true;
+    }
+
+    // Skip if already initialized, still loading, no schedules loaded yet, or currently checking
+    if (settlementInitializedRef.current || isLoading || isCheckingRef.current) {
+      return;
+    }
+
+    // Wait for schedules to be fully loaded from Firebase
+    if (schedules === undefined) {
+      return;
+    }
+
     const checkAndAddMonthlySettlement = async () => {
-      const year = currentDate.getFullYear();
-      
-      // Check for current year and next year
-      for (let y = year; y <= year + 1; y++) {
-        for (let m = 0; m < 12; m++) {
-          const lastMonday = getLastMondayOfMonth(y, m);
-          const dateStr = `${lastMonday.getFullYear()}-${String(lastMonday.getMonth() + 1).padStart(2, '0')}-${String(lastMonday.getDate()).padStart(2, '0')}`;
-          
-          // Check if this schedule already exists
-          const existingSchedule = schedules.find(s => 
-            s.date === dateStr && s.title.includes('후불제 정산정리')
-          );
-          
-          if (!existingSchedule && settings.users.length > 0) {
-            // Find or create a category for this
-            const settlementCategory = settings.categories.find(c => c.name === '업무') || settings.categories[0];
+      // Prevent concurrent execution
+      if (isCheckingRef.current || settlementInitializedRef.current) {
+        return;
+      }
+      isCheckingRef.current = true;
+
+      try {
+        const year = new Date().getFullYear();
+        const schedulesToAdd: Array<{date: string, title: string, description: string}> = [];
+        
+        // Get a fresh snapshot of current schedules for comparison
+        const currentSchedules = [...schedules];
+        
+        // Check for current year and next year
+        for (let y = year; y <= year + 1; y++) {
+          for (let m = 0; m < 12; m++) {
+            const lastMonday = getLastMondayOfMonth(y, m);
+            const dateStr = `${lastMonday.getFullYear()}-${String(lastMonday.getMonth() + 1).padStart(2, '0')}-${String(lastMonday.getDate()).padStart(2, '0')}`;
             
+            // Check if this schedule already exists (more strict matching)
+            const existingSchedule = currentSchedules.find(s => 
+              s.date === dateStr && 
+              (s.title.includes('후불제 정산정리') || s.title === '✨️후불제 정산정리')
+            );
+            
+            if (!existingSchedule) {
+              // Double check we haven't already queued this date
+              const alreadyQueued = schedulesToAdd.find(s => s.date === dateStr);
+              if (!alreadyQueued) {
+                schedulesToAdd.push({
+                  date: dateStr,
+                  title: '✨️후불제 정산정리',
+                  description: `${lastMonday.getFullYear()}년 ${lastMonday.getMonth() + 1}월 마지막 주 월요일 정산`,
+                });
+              }
+            }
+          }
+        }
+
+        // Add all missing schedules (with delay between each to prevent race conditions)
+        if (schedulesToAdd.length > 0 && settings.users.length > 0) {
+          const settlementCategory = settings.categories.find(c => c.name === '업무') || settings.categories[0];
+          
+          for (const schedule of schedulesToAdd) {
+            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between adds
             addSchedule({
-              title: '✨️후불제 정산정리',
-              description: `${lastMonday.getFullYear()}년 ${lastMonday.getMonth() + 1}월 마지막 주 월요일 정산`,
-              date: dateStr,
+              ...schedule,
               userId: settings.users[0]?.id ?? '',
               categoryId: settlementCategory?.id ?? '',
             });
           }
         }
+        
+        // Mark as initialized both in ref and sessionStorage
+        settlementInitializedRef.current = true;
+        sessionStorage.setItem(sessionKey, 'true');
+      } finally {
+        isCheckingRef.current = false;
       }
     };
 
-    // Only run if we have settings loaded
-    if (settings.users.length > 0 && schedules !== undefined) {
-      // Debounce to prevent multiple calls
-      const timeoutId = setTimeout(checkAndAddMonthlySettlement, 1000);
+    // Only run if we have settings loaded and schedules array exists
+    if (settings.users.length > 0 && Array.isArray(schedules)) {
+      // Longer delay to ensure schedules are fully loaded from Firebase
+      const timeoutId = setTimeout(checkAndAddMonthlySettlement, 3000);
       return () => clearTimeout(timeoutId);
     }
-  }, [currentDate.getFullYear(), settings.users.length, schedules.length]);
+  }, [isLoading, settings.users.length, schedules]);
 
   // Get holidays for current year and adjacent years
   const holidays = useMemo(() => {
