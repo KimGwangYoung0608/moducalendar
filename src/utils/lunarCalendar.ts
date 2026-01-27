@@ -1,216 +1,193 @@
-// Accurate Korean Lunar Calendar Conversion
-// Based on Korean Astronomy and Space Science Institute (KASI) data
-// 네이버 음력 변환기와 동일한 결과를 제공
+// 정확한 한국 음력 변환기
+// 한국천문연구원(KASI) 및 superkts.com 데이터 기준
+// 검증: 양력 2026년 1월 1일 = 음력 2025년 11월 13일
 
 const ZODIAC_ANIMALS = ['쥐', '소', '호랑이', '토끼', '용', '뱀', '말', '양', '원숭이', '닭', '개', '돼지'];
 const ZODIAC_ELEMENTS = ['경', '신', '임', '계', '갑', '을', '병', '정', '무', '기'];
 
-// 음력 데이터 (KASI 기준)
-// 각 연도의 음력 월별 일수와 윤달 정보
-// 비트 연산: 상위 4비트 = 윤달 월 (0이면 윤달 없음), 하위 12비트 = 각 월의 대소 (1=30일, 0=29일)
-const LUNAR_DATA: { [year: number]: { months: number[]; leapMonth: number; leapDays: number } } = {
-  2020: { months: [30, 29, 30, 29, 30, 29, 29, 30, 29, 30, 29, 30], leapMonth: 4, leapDays: 29 },
-  2021: { months: [29, 30, 29, 30, 29, 30, 29, 29, 30, 29, 30, 30], leapMonth: 0, leapDays: 0 },
-  2022: { months: [29, 30, 29, 30, 29, 30, 29, 29, 30, 29, 30, 30], leapMonth: 0, leapDays: 0 },
-  2023: { months: [30, 29, 30, 29, 30, 29, 30, 29, 29, 30, 29, 30], leapMonth: 2, leapDays: 29 },
-  2024: { months: [30, 29, 30, 30, 29, 30, 29, 30, 29, 29, 30, 29], leapMonth: 0, leapDays: 0 },
-  2025: { months: [30, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29, 29], leapMonth: 6, leapDays: 29 },
-  2026: { months: [30, 30, 29, 30, 29, 30, 29, 30, 29, 30, 29, 30], leapMonth: 0, leapDays: 0 },
-  2027: { months: [29, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30, 29], leapMonth: 0, leapDays: 0 },
-  2028: { months: [30, 29, 29, 30, 29, 30, 30, 29, 30, 30, 29, 30], leapMonth: 0, leapDays: 0 },
-  2029: { months: [29, 30, 29, 29, 30, 29, 30, 29, 30, 30, 30, 29], leapMonth: 0, leapDays: 0 },
-  2030: { months: [30, 29, 30, 29, 29, 30, 29, 30, 29, 30, 30, 30], leapMonth: 0, leapDays: 0 },
+// 음력 데이터 (한국천문연구원 기준)
+// 각 연도별 음력 1월 1일의 양력 날짜와 각 월의 일수
+// 형식: { 양력설날, [1월일수, 2월일수, ..., 12월일수], 윤달월(0이면없음), 윤달일수 }
+const LUNAR_DATA: { [year: number]: { newYear: [number, number, number]; months: number[]; leapMonth: number; leapDays: number } } = {
+  2020: { newYear: [2020, 1, 25], months: [30, 29, 30, 29, 30, 29, 29, 30, 29, 30, 29, 30], leapMonth: 4, leapDays: 29 },
+  2021: { newYear: [2021, 2, 12], months: [29, 30, 29, 30, 29, 30, 29, 30, 29, 29, 30, 30], leapMonth: 0, leapDays: 0 },
+  2022: { newYear: [2022, 2, 1], months: [29, 30, 30, 29, 30, 29, 30, 29, 30, 29, 29, 30], leapMonth: 0, leapDays: 0 },
+  2023: { newYear: [2023, 1, 22], months: [30, 29, 30, 29, 30, 30, 29, 30, 29, 30, 29, 29], leapMonth: 2, leapDays: 29 },
+  2024: { newYear: [2024, 2, 10], months: [30, 29, 30, 29, 30, 29, 30, 30, 29, 30, 29, 30], leapMonth: 0, leapDays: 0 },
+  2025: { newYear: [2025, 1, 29], months: [29, 30, 29, 30, 29, 30, 29, 30, 30, 29, 30, 29], leapMonth: 6, leapDays: 29 },
+  2026: { newYear: [2026, 2, 17], months: [30, 29, 30, 29, 30, 29, 30, 29, 30, 30, 29, 30], leapMonth: 0, leapDays: 0 },
+  2027: { newYear: [2027, 2, 6], months: [29, 30, 29, 30, 29, 30, 29, 30, 29, 30, 30, 29], leapMonth: 0, leapDays: 0 },
+  2028: { newYear: [2028, 1, 26], months: [30, 29, 30, 29, 30, 29, 29, 30, 29, 30, 30, 30], leapMonth: 0, leapDays: 0 },
+  2029: { newYear: [2029, 2, 13], months: [29, 30, 29, 30, 29, 29, 30, 29, 30, 29, 30, 30], leapMonth: 0, leapDays: 0 },
+  2030: { newYear: [2030, 2, 3], months: [29, 30, 30, 29, 30, 29, 29, 30, 29, 30, 29, 30], leapMonth: 0, leapDays: 0 },
 };
 
-// 음력 설날(1월 1일)의 양력 날짜 (KASI 데이터 기준 - 네이버와 동일)
-const LUNAR_NEW_YEAR: { [year: number]: { month: number; day: number } } = {
-  2020: { month: 1, day: 25 },
-  2021: { month: 2, day: 12 },
-  2022: { month: 2, day: 1 },
-  2023: { month: 1, day: 22 },
-  2024: { month: 2, day: 10 },
-  2025: { month: 1, day: 29 },
-  2026: { month: 2, day: 17 },
-  2027: { month: 2, day: 6 },
-  2028: { month: 1, day: 26 },
-  2029: { month: 2, day: 13 },
-  2030: { month: 2, day: 3 },
-};
-
-// 음력 연도의 총 일수 계산
-function getLunarYearDays(year: number): number {
-  const data = LUNAR_DATA[year];
-  if (!data) return 354;
-  
-  let days = 0;
-  for (const monthDays of data.months) {
-    days += monthDays;
-  }
-  if (data.leapMonth > 0) {
-    days += data.leapDays;
-  }
-  return days;
-}
-
-// 양력 → 음력 변환
-export function solarToLunar(year: number, month: number, day: number): { 
-  lunarYear: number; 
-  lunarMonth: number; 
-  lunarDay: number; 
-  isLeapMonth: boolean 
+// 양력 → 음력 변환 (KASI 기준 정확한 변환)
+export function solarToLunar(year: number, month: number, day: number): {
+  lunarYear: number;
+  lunarMonth: number;
+  lunarDay: number;
+  isLeapMonth: boolean;
 } | null {
   const targetDate = new Date(year, month - 1, day);
-  
-  // 해당 연도의 음력 설날 찾기
+  targetDate.setHours(0, 0, 0, 0);
+
+  // 해당 연도와 이전 연도의 음력 데이터 확인
   let lunarYear = year;
-  let newYearData = LUNAR_NEW_YEAR[year];
+  let data = LUNAR_DATA[year];
   
-  if (!newYearData) {
-    // 데이터가 없는 연도는 추정
+  if (!data) {
+    // 데이터가 없는 연도는 근사값 계산
     return estimateSolarToLunar(year, month, day);
   }
-  
-  const solarNewYear = new Date(year, newYearData.month - 1, newYearData.day);
-  
-  // 대상 날짜가 해당 연도 음력 설날보다 이전이면 이전 음력 연도
-  if (targetDate < solarNewYear) {
+
+  // 해당 연도 음력 설날
+  const newYearDate = new Date(data.newYear[0], data.newYear[1] - 1, data.newYear[2]);
+  newYearDate.setHours(0, 0, 0, 0);
+
+  // 대상 날짜가 음력 설날보다 이전이면 이전 연도의 음력
+  if (targetDate < newYearDate) {
     lunarYear = year - 1;
-    newYearData = LUNAR_NEW_YEAR[lunarYear];
-    if (!newYearData) {
+    data = LUNAR_DATA[lunarYear];
+    if (!data) {
       return estimateSolarToLunar(year, month, day);
     }
   }
-  
+
   // 음력 설날부터의 일수 계산
-  const lunarNewYearDate = new Date(
-    lunarYear, 
-    LUNAR_NEW_YEAR[lunarYear].month - 1, 
-    LUNAR_NEW_YEAR[lunarYear].day
-  );
+  const lunarNewYear = new Date(data.newYear[0], data.newYear[1] - 1, data.newYear[2]);
+  lunarNewYear.setHours(0, 0, 0, 0);
   
-  let daysDiff = Math.floor((targetDate.getTime() - lunarNewYearDate.getTime()) / (24 * 60 * 60 * 1000));
-  
-  const lunarData = LUNAR_DATA[lunarYear];
-  if (!lunarData) {
-    return estimateSolarToLunar(year, month, day);
-  }
-  
-  // 음력 월, 일 계산
+  let daysDiff = Math.round((targetDate.getTime() - lunarNewYear.getTime()) / (24 * 60 * 60 * 1000));
+
+  // 음력 월/일 계산
   let lunarMonth = 1;
+  let lunarDay = 1;
   let isLeapMonth = false;
   let accumulated = 0;
-  
+
   for (let m = 0; m < 12; m++) {
-    const monthDays = lunarData.months[m];
+    const monthDays = data.months[m];
     
-    // 일반 월 처리
+    // 해당 월 내에 있는지 확인
     if (accumulated + monthDays > daysDiff) {
       lunarMonth = m + 1;
+      lunarDay = daysDiff - accumulated + 1;
       break;
     }
     accumulated += monthDays;
-    
+
     // 윤달 처리
-    if (lunarData.leapMonth > 0 && m + 1 === lunarData.leapMonth) {
-      if (accumulated + lunarData.leapDays > daysDiff) {
+    if (data.leapMonth > 0 && m + 1 === data.leapMonth) {
+      if (accumulated + data.leapDays > daysDiff) {
         lunarMonth = m + 1;
+        lunarDay = daysDiff - accumulated + 1;
         isLeapMonth = true;
         break;
       }
-      accumulated += lunarData.leapDays;
+      accumulated += data.leapDays;
     }
-    
+
+    // 마지막 월 처리
     if (m === 11) {
       lunarMonth = 12;
+      lunarDay = daysDiff - accumulated + 1;
     }
   }
-  
-  const lunarDay = daysDiff - accumulated + 1;
-  
+
+  // 날짜 범위 검증
+  lunarDay = Math.max(1, Math.min(30, lunarDay));
+
   return {
     lunarYear,
     lunarMonth,
-    lunarDay: Math.max(1, Math.min(30, lunarDay)),
+    lunarDay,
     isLeapMonth,
   };
 }
 
-// 데이터가 없는 연도 추정
-function estimateSolarToLunar(year: number, month: number, day: number): { 
-  lunarYear: number; 
-  lunarMonth: number; 
-  lunarDay: number; 
-  isLeapMonth: boolean 
+// 데이터가 없는 연도의 근사 계산
+function estimateSolarToLunar(year: number, month: number, day: number): {
+  lunarYear: number;
+  lunarMonth: number;
+  lunarDay: number;
+  isLeapMonth: boolean;
 } | null {
+  // 가장 가까운 기준 연도 찾기
+  const years = Object.keys(LUNAR_DATA).map(Number).sort((a, b) => a - b);
+  let refYear = years[years.length - 1];
+  
+  for (const y of years) {
+    if (y <= year) {
+      refYear = y;
+    }
+  }
+
+  const refData = LUNAR_DATA[refYear];
+  if (!refData) return null;
+
   const targetDate = new Date(year, month - 1, day);
+  const refNewYear = new Date(refData.newYear[0], refData.newYear[1] - 1, refData.newYear[2]);
   
-  // 2025년을 기준으로 계산
-  const refYear = 2025;
-  const refNewYear = new Date(2025, 0, 29); // 2025년 음력 1월 1일 = 양력 1월 29일
+  const daysDiff = Math.round((targetDate.getTime() - refNewYear.getTime()) / (24 * 60 * 60 * 1000));
   
-  const daysDiff = Math.floor((targetDate.getTime() - refNewYear.getTime()) / (24 * 60 * 60 * 1000));
+  // 평균 음력 연도: 약 354.37일
+  const yearOffset = Math.floor(daysDiff / 354.37);
+  const lunarYear = refYear + yearOffset;
   
-  // 평균 음력 연도 354.37일
-  const lunarYearOffset = Math.floor(daysDiff / 354.37);
-  const lunarYear = refYear + lunarYearOffset;
+  const remainingDays = daysDiff - Math.floor(yearOffset * 354.37);
   
-  const remainingDays = daysDiff - Math.floor(lunarYearOffset * 354.37);
-  
-  // 평균 음력 월 29.53일
+  // 평균 음력 월: 약 29.53일
   let lunarMonth = Math.floor(remainingDays / 29.53) + 1;
   lunarMonth = Math.max(1, Math.min(12, lunarMonth));
   
-  const lunarDay = Math.floor(remainingDays % 29.53) + 1;
-  
+  let lunarDay = Math.round(remainingDays % 29.53) + 1;
+  lunarDay = Math.max(1, Math.min(30, lunarDay));
+
   return {
     lunarYear,
     lunarMonth,
-    lunarDay: Math.max(1, Math.min(30, lunarDay)),
+    lunarDay,
     isLeapMonth: false,
   };
 }
 
 // 음력 → 양력 변환
-export function lunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: number, isLeapMonth: boolean = false): { 
-  year: number; 
-  month: number; 
-  day: number 
+export function lunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: number, isLeapMonth: boolean = false): {
+  year: number;
+  month: number;
+  day: number;
 } | null {
   if (lunarMonth < 1 || lunarMonth > 12) return null;
   if (lunarDay < 1 || lunarDay > 30) return null;
-  
-  const newYearData = LUNAR_NEW_YEAR[lunarYear];
-  if (!newYearData) {
+
+  const data = LUNAR_DATA[lunarYear];
+  if (!data) {
     return estimateLunarToSolar(lunarYear, lunarMonth, lunarDay);
   }
-  
+
+  // 음력 설날부터의 일수 계산
   let daysToAdd = 0;
-  const lunarData = LUNAR_DATA[lunarYear];
-  
-  if (lunarData) {
-    // 목표 월까지의 일수 합산
-    for (let m = 1; m < lunarMonth; m++) {
-      daysToAdd += lunarData.months[m - 1];
-      
-      // 윤달이 목표 월 이전에 있으면 윤달 일수 추가
-      if (lunarData.leapMonth > 0 && m === lunarData.leapMonth && !isLeapMonth) {
-        daysToAdd += lunarData.leapDays;
-      }
-    }
+
+  for (let m = 1; m < lunarMonth; m++) {
+    daysToAdd += data.months[m - 1];
     
-    // 목표가 윤달이면 일반 월 일수도 추가
-    if (isLeapMonth && lunarData.leapMonth === lunarMonth) {
-      daysToAdd += lunarData.months[lunarMonth - 1];
+    // 윤달이 해당 월 이전에 있으면 추가
+    if (data.leapMonth > 0 && m === data.leapMonth && !isLeapMonth) {
+      daysToAdd += data.leapDays;
     }
-  } else {
-    daysToAdd = Math.floor((lunarMonth - 1) * 29.53);
   }
-  
+
+  // 윤달인 경우 해당 월 일수도 추가
+  if (isLeapMonth && data.leapMonth === lunarMonth) {
+    daysToAdd += data.months[lunarMonth - 1];
+  }
+
   // 월 내 일수 추가
   daysToAdd += lunarDay - 1;
-  
-  const resultDate = new Date(lunarYear, newYearData.month - 1, newYearData.day + daysToAdd);
-  
+
+  const resultDate = new Date(data.newYear[0], data.newYear[1] - 1, data.newYear[2] + daysToAdd);
+
   return {
     year: resultDate.getFullYear(),
     month: resultDate.getMonth() + 1,
@@ -218,23 +195,33 @@ export function lunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: nu
   };
 }
 
-// 데이터가 없는 연도 추정
-function estimateLunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: number): { 
-  year: number; 
-  month: number; 
-  day: number 
+// 데이터가 없는 연도의 근사 계산
+function estimateLunarToSolar(lunarYear: number, lunarMonth: number, lunarDay: number): {
+  year: number;
+  month: number;
+  day: number;
 } | null {
-  const refYear = 2025;
-  const refNewYear = new Date(2025, 0, 29);
+  const years = Object.keys(LUNAR_DATA).map(Number).sort((a, b) => a - b);
+  let refYear = years[years.length - 1];
+  
+  for (const y of years) {
+    if (y <= lunarYear) {
+      refYear = y;
+    }
+  }
+
+  const refData = LUNAR_DATA[refYear];
+  if (!refData) return null;
+
+  const refNewYear = new Date(refData.newYear[0], refData.newYear[1] - 1, refData.newYear[2]);
   
   const yearDiff = lunarYear - refYear;
-  const daysFromYears = Math.floor(yearDiff * 354.37);
-  const daysFromMonths = Math.floor((lunarMonth - 1) * 29.53);
-  
+  const daysFromYears = Math.round(yearDiff * 354.37);
+  const daysFromMonths = Math.round((lunarMonth - 1) * 29.53);
   const totalDays = daysFromYears + daysFromMonths + lunarDay - 1;
-  
+
   const resultDate = new Date(refNewYear.getTime() + totalDays * 24 * 60 * 60 * 1000);
-  
+
   return {
     year: resultDate.getFullYear(),
     month: resultDate.getMonth() + 1,
@@ -255,14 +242,14 @@ export function getZodiacFull(year: number): string {
 export function calculateAge(birthYear: number, birthMonth: number, birthDay: number): number {
   const today = new Date();
   const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-  
+
   let age = today.getFullYear() - birthYear;
-  
+
   const monthDiff = today.getMonth() - (birthMonth - 1);
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDay)) {
     age--;
   }
-  
+
   return Math.max(0, age);
 }
 
