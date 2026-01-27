@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,12 @@ const colorClasses = [
 export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsModalProps) {
   const [users, setUsers] = useState<User[]>(settings.users);
   const [categories, setCategories] = useState<Category[]>(settings.categories);
+
+  // 설정이 변경될 때 로컬 상태 업데이트 (Firebase에서 로드된 데이터 반영)
+  useEffect(() => {
+    setUsers(settings.users);
+    setCategories(settings.categories);
+  }, [settings]);
 
   if (!isOpen) return null;
 
@@ -101,34 +107,36 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
             </Button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {users.map((user) => (
-              <div key={user.id} className="flex items-center gap-3">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
-                    <button
-                      key={colorIndex}
-                      onClick={() => handleUserColorChange(user.id, colorIndex)}
-                      className={`w-5 h-5 rounded-full ${colorClasses[colorIndex - 1]} ${
-                        user.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
-                      }`}
-                    />
-                  ))}
+              <div key={user.id} className="border border-border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
+                      <button
+                        key={colorIndex}
+                        onClick={() => handleUserColorChange(user.id, colorIndex)}
+                        className={`w-6 h-6 rounded-full ${colorClasses[colorIndex - 1]} ${
+                          user.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveUser(user.id)}
+                    disabled={users.length <= 1}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 <Input
                   value={user.name}
                   onChange={(e) => handleUserNameChange(user.id, e.target.value)}
-                  className="flex-1"
+                  placeholder="사용자 이름"
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemoveUser(user.id)}
-                  disabled={users.length <= 1}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             ))}
           </div>
@@ -144,34 +152,36 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
             </Button>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {categories.map((category) => (
-              <div key={category.id} className="flex items-center gap-3">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
-                    <button
-                      key={colorIndex}
-                      onClick={() => handleCategoryColorChange(category.id, colorIndex)}
-                      className={`w-5 h-5 rounded-full ${colorClasses[colorIndex - 1]} ${
-                        category.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
-                      }`}
-                    />
-                  ))}
+              <div key={category.id} className="border border-border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
+                      <button
+                        key={colorIndex}
+                        onClick={() => handleCategoryColorChange(category.id, colorIndex)}
+                        className={`w-6 h-6 rounded-full ${colorClasses[colorIndex - 1]} ${
+                          category.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveCategory(category.id)}
+                    disabled={categories.length <= 1}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 <Input
                   value={category.name}
                   onChange={(e) => handleCategoryNameChange(category.id, e.target.value)}
-                  className="flex-1"
+                  placeholder="카테고리 이름"
                 />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemoveCategory(category.id)}
-                  disabled={categories.length <= 1}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
               </div>
             ))}
           </div>

@@ -75,11 +75,11 @@ export function ScheduleList({ schedules, users, categories, onDelete }: Schedul
             key={schedule.id}
             className="bg-card border border-border rounded-lg p-3 flex items-start gap-3"
           >
-            <div className={`w-1 h-full min-h-[40px] rounded-full ${getCategoryColor(schedule.categoryId)}`} />
+            <div className={`w-1 h-full min-h-[40px] rounded-full ${getUserColor(schedule.userId)}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 {!isBirthday && (
-                  <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getCategoryColor(schedule.categoryId)}`}>
+                  <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
                     {getCategoryName(schedule.categoryId)}
                   </span>
                 )}

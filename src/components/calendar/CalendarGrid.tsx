@@ -87,6 +87,12 @@ export function CalendarGrid({
     return colorClasses[(category.colorIndex - 1) % 8];
   };
 
+  const getUserColor = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return colorClasses[0];
+    return colorClasses[(user.colorIndex - 1) % 8];
+  };
+
   const getCategoryName = (categoryId: string) => {
     return categories.find(c => c.id === categoryId)?.name ?? '';
   };
@@ -175,7 +181,7 @@ export function CalendarGrid({
                       key={schedule.id}
                       className={cn(
                         "text-[10px] text-white px-1 py-0.5 rounded truncate",
-                        getCategoryColor(schedule.categoryId)
+                        getUserColor(schedule.userId)
                       )}
                     >
                       {isBirthday ? '🎂 ' : ''}{schedule.title.replace(/^🎂\s*/, '')}
