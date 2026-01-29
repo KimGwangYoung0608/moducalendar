@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CalendarSettings, User, Category } from '@/types/calendar';
+import { colorClasses, COLOR_COUNT } from '@/lib/colors';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,17 +12,6 @@ interface SettingsModalProps {
   settings: CalendarSettings;
   onSave: (settings: CalendarSettings) => void;
 }
-
-const colorClasses = [
-  'bg-[hsl(220,90%,56%)]',
-  'bg-[hsl(160,84%,39%)]',
-  'bg-[hsl(340,82%,52%)]',
-  'bg-[hsl(38,92%,50%)]',
-  'bg-[hsl(262,83%,58%)]',
-  'bg-[hsl(180,70%,45%)]',
-  'bg-[hsl(10,78%,54%)]',
-  'bg-[hsl(280,68%,50%)]',
-];
 
 export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsModalProps) {
   const [users, setUsers] = useState<User[]>([]);
@@ -46,7 +36,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
     const newUser: User = {
       id: Date.now().toString(),
       name: `사용자${users.length + 1}`,
-      colorIndex: (users.length % 8) + 1,
+      colorIndex: (users.length % COLOR_COUNT) + 1,
     };
     setUsers(prevUsers => [...prevUsers, newUser]);
   };
@@ -70,7 +60,7 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
     const newCategory: Category = {
       id: Date.now().toString(),
       name: `카테고리${categories.length + 1}`,
-      colorIndex: (categories.length % 8) + 1,
+      colorIndex: (categories.length % COLOR_COUNT) + 1,
     };
     setCategories(prevCategories => [...prevCategories, newCategory]);
   };
@@ -127,8 +117,8 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
             {users.map((user) => (
               <div key={user.id} className="border border-border rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
+                  <div className="flex flex-wrap gap-1 max-w-[280px]">
+                    {Array.from({ length: COLOR_COUNT }, (_, i) => i + 1).map((colorIndex) => (
                       <button
                         key={colorIndex}
                         type="button"
@@ -137,8 +127,8 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                           e.stopPropagation();
                           handleUserColorChange(user.id, colorIndex);
                         }}
-                        className={`w-6 h-6 rounded-full ${colorClasses[colorIndex - 1]} ${
-                          user.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
+                        className={`w-5 h-5 rounded-full ${colorClasses[colorIndex - 1]} ${
+                          user.colorIndex === colorIndex ? 'ring-2 ring-offset-1 ring-foreground' : ''
                         }`}
                       />
                     ))}
@@ -182,8 +172,8 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
             {categories.map((category) => (
               <div key={category.id} className="border border-border rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map((colorIndex) => (
+                  <div className="flex flex-wrap gap-1 max-w-[280px]">
+                    {Array.from({ length: COLOR_COUNT }, (_, i) => i + 1).map((colorIndex) => (
                       <button
                         key={colorIndex}
                         type="button"
@@ -192,8 +182,8 @@ export function SettingsModal({ isOpen, onClose, settings, onSave }: SettingsMod
                           e.stopPropagation();
                           handleCategoryColorChange(category.id, colorIndex);
                         }}
-                        className={`w-6 h-6 rounded-full ${colorClasses[colorIndex - 1]} ${
-                          category.colorIndex === colorIndex ? 'ring-2 ring-offset-2 ring-foreground' : ''
+                        className={`w-5 h-5 rounded-full ${colorClasses[colorIndex - 1]} ${
+                          category.colorIndex === colorIndex ? 'ring-2 ring-offset-1 ring-foreground' : ''
                         }`}
                       />
                     ))}

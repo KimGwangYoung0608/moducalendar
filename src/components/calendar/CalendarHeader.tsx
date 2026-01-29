@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Settings, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { User, Category } from '@/types/calendar';
+import { getColorClass } from '@/lib/colors';
 
 interface CalendarHeaderProps {
   currentDate: Date;
@@ -17,17 +18,6 @@ interface CalendarHeaderProps {
   onUserClickForSchedule: (userId: string) => void;
   onCategoryClickForSchedule: (categoryId: string) => void;
 }
-
-const colorClasses = [
-  'bg-[hsl(220,90%,56%)]',
-  'bg-[hsl(160,84%,39%)]',
-  'bg-[hsl(340,82%,52%)]',
-  'bg-[hsl(38,92%,50%)]',
-  'bg-[hsl(262,83%,58%)]',
-  'bg-[hsl(180,70%,45%)]',
-  'bg-[hsl(10,78%,54%)]',
-  'bg-[hsl(280,68%,50%)]',
-];
 
 export function CalendarHeader({
   currentDate,
@@ -90,7 +80,7 @@ export function CalendarHeader({
               className="h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95"
             >
               <span
-                className={`w-2.5 h-2.5 rounded-full ${colorClasses[(user.colorIndex - 1) % 8]}`}
+                className={`w-2.5 h-2.5 rounded-full ${getColorClass(user.colorIndex)}`}
               />
               {user.name}
             </Button>
@@ -112,7 +102,7 @@ export function CalendarHeader({
               className="h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95"
             >
               <span
-                className={`w-2.5 h-2.5 rounded-full ${colorClasses[(category.colorIndex - 1) % 8]}`}
+                className={`w-2.5 h-2.5 rounded-full ${getColorClass(category.colorIndex)}`}
               />
               {category.name}
             </Button>

@@ -14,6 +14,7 @@ import {
   SETTINGS_COLLECTION, 
   SETTINGS_DOC_ID 
 } from '@/lib/firebase';
+import { COLOR_COUNT } from '@/lib/colors';
 
 interface CalendarData {
   settings: CalendarSettings;
@@ -54,7 +55,7 @@ export function useCalendarStore() {
               users: data.users,
               categories: data.categories.map((cat: Category, idx: number) => ({
                 ...cat,
-                colorIndex: cat.colorIndex ?? (idx % 8) + 1,
+                colorIndex: cat.colorIndex ?? (idx % COLOR_COUNT) + 1,
               })),
             };
           }
@@ -103,7 +104,7 @@ export function useCalendarStore() {
               users: data.users,
               categories: data.categories.map((cat: Category, idx: number) => ({
                 ...cat,
-                colorIndex: cat.colorIndex ?? (idx % 8) + 1,
+                colorIndex: cat.colorIndex ?? (idx % COLOR_COUNT) + 1,
               })),
             });
           }

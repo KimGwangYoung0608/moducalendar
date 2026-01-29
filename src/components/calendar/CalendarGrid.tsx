@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Schedule, User, Category, Holiday } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 import { solarToLunar } from '@/utils/lunarCalendar';
+import { colorClasses, getColorClass } from '@/lib/colors';
 
 interface CalendarGridProps {
   currentDate: Date;
@@ -14,17 +15,6 @@ interface CalendarGridProps {
 }
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
-
-const colorClasses = [
-  'bg-[hsl(220,90%,56%)]',
-  'bg-[hsl(160,84%,39%)]',
-  'bg-[hsl(340,82%,52%)]',
-  'bg-[hsl(38,92%,50%)]',
-  'bg-[hsl(262,83%,58%)]',
-  'bg-[hsl(180,70%,45%)]',
-  'bg-[hsl(10,78%,54%)]',
-  'bg-[hsl(280,68%,50%)]',
-];
 
 export function CalendarGrid({
   currentDate,
@@ -84,13 +74,13 @@ export function CalendarGrid({
   const getCategoryColor = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return colorClasses[0];
-    return colorClasses[(category.colorIndex - 1) % 8];
+    return getColorClass(category.colorIndex);
   };
 
   const getUserColor = (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return colorClasses[0];
-    return colorClasses[(user.colorIndex - 1) % 8];
+    return getColorClass(user.colorIndex);
   };
 
   const getCategoryName = (categoryId: string) => {

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Schedule, User, Category, ScheduleFile } from '@/types/calendar';
 import { solarToLunar } from '@/utils/lunarCalendar';
 import { cn } from '@/lib/utils';
+import { colorClasses, getColorClass } from '@/lib/colors';
 
 interface ScheduleListProps {
   schedules: Schedule[];
@@ -16,17 +17,6 @@ interface ScheduleListProps {
   onToggleComplete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Omit<Schedule, 'id' | 'createdAt'>>) => void;
 }
-
-const colorClasses = [
-  'bg-[hsl(220,90%,56%)]',
-  'bg-[hsl(160,84%,39%)]',
-  'bg-[hsl(340,82%,52%)]',
-  'bg-[hsl(38,92%,50%)]',
-  'bg-[hsl(262,83%,58%)]',
-  'bg-[hsl(180,70%,45%)]',
-  'bg-[hsl(10,78%,54%)]',
-  'bg-[hsl(280,68%,50%)]',
-];
 
 export function ScheduleList({ schedules, users, categories, onDelete, onToggleComplete, onUpdate }: ScheduleListProps) {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -44,13 +34,13 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
   const getUserColor = (userId: string) => {
     const user = users.find(u => u.id === userId);
     if (!user) return colorClasses[0];
-    return colorClasses[(user.colorIndex - 1) % 8];
+    return getColorClass(user.colorIndex);
   };
 
   const getCategoryColor = (categoryId: string) => {
     const category = categories.find(c => c.id === categoryId);
     if (!category) return colorClasses[0];
-    return colorClasses[(category.colorIndex - 1) % 8];
+    return getColorClass(category.colorIndex);
   };
 
   const getUserName = (userId: string) => {
@@ -164,8 +154,8 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
               <div className={`w-1 min-h-[40px] rounded-full ${getUserColor(schedule.userId)}`} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  {!isBirthday && (
-                    <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getUserColor(schedule.userId)}`}>
+                  {!isBirthday && schedule.categoryId && (
+                    <span className={`px-1.5 py-0.5 rounded text-white text-xs ${getCategoryColor(schedule.categoryId)}`}>
                       {getCategoryName(schedule.categoryId)}
                     </span>
                   )}
@@ -371,7 +361,7 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                       className={cn(
                         "px-3 py-1.5 rounded-full text-sm transition-colors",
                         editUserId === user.id
-                          ? `${colorClasses[(user.colorIndex - 1) % 8]} text-white`
+                          ? `${getColorClass(user.colorIndex)} text-white`
                           : "bg-muted hover:bg-muted/80"
                       )}
                     >
@@ -392,7 +382,7 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                       className={cn(
                         "px-3 py-1.5 rounded-full text-sm transition-colors",
                         editCategoryId === category.id
-                          ? `${colorClasses[(category.colorIndex - 1) % 8]} text-white`
+                          ? `${getColorClass(category.colorIndex)} text-white`
                           : "bg-muted hover:bg-muted/80"
                       )}
                     >
