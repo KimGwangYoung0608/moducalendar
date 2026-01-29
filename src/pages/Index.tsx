@@ -58,30 +58,34 @@ const Index = () => {
   
   const scheduleListRef = useRef<HTMLDivElement>(null);
 
-  // Track if monthly settlement schedules have been initialized (use sessionStorage to persist across re-renders)
+  // Track if monthly settlement schedules have been initialized
   const settlementInitializedRef = useRef(false);
   const isCheckingRef = useRef(false);
 
-  // Generate monthly "후불제 정산정리" schedules - runs only once per session
+  // 후불제 정산정리 스케줄 생성 - 앱 로드 시 한 번만 실행
   useEffect(() => {
-    // Check sessionStorage to see if already initialized in this session
-    const sessionKey = 'settlement_initialized_' + new Date().toDateString();
-    if (sessionStorage.getItem(sessionKey) === 'true') {
+    // localStorage를 사용하여 영구적으로 추적 (오늘 날짜 기준)
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `settlement_init_${today}`;
+    
+    // 이미 오늘 초기화했으면 스킵
+    if (localStorage.getItem(storageKey) === 'done') {
       settlementInitializedRef.current = true;
+      return;
     }
 
-    // Skip if already initialized, still loading, no schedules loaded yet, or currently checking
+    // 로딩 중이거나, 이미 초기화했거나, 현재 체크 중이면 스킵
     if (settlementInitializedRef.current || isLoading || isCheckingRef.current) {
       return;
     }
 
-    // Wait for schedules to be fully loaded from Firebase
-    if (schedules === undefined) {
+    // 스케줄이 아직 로드되지 않았으면 대기
+    if (!Array.isArray(schedules)) {
       return;
     }
 
     const checkAndAddMonthlySettlement = async () => {
-      // Prevent concurrent execution
+      // 동시 실행 방지
       if (isCheckingRef.current || settlementInitializedRef.current) {
         return;
       }
@@ -91,23 +95,22 @@ const Index = () => {
         const year = new Date().getFullYear();
         const schedulesToAdd: Array<{date: string, title: string, description: string}> = [];
         
-        // Get a fresh snapshot of current schedules for comparison
+        // 현재 스케줄 스냅샷
         const currentSchedules = [...schedules];
         
-        // Check for current year and next year
+        // 현재 연도와 다음 연도 체크
         for (let y = year; y <= year + 1; y++) {
           for (let m = 0; m < 12; m++) {
             const lastMonday = getLastMondayOfMonth(y, m);
             const dateStr = `${lastMonday.getFullYear()}-${String(lastMonday.getMonth() + 1).padStart(2, '0')}-${String(lastMonday.getDate()).padStart(2, '0')}`;
             
-            // Check if this schedule already exists (more strict matching)
+            // 해당 날짜에 후불제 정산정리가 이미 있는지 체크
             const existingSchedule = currentSchedules.find(s => 
-              s.date === dateStr && 
-              (s.title.includes('후불제 정산정리') || s.title === '✨️후불제 정산정리')
+              s.date === dateStr && s.title.includes('후불제 정산정리')
             );
             
             if (!existingSchedule) {
-              // Double check we haven't already queued this date
+              // 이미 대기열에 있는지 확인
               const alreadyQueued = schedulesToAdd.find(s => s.date === dateStr);
               if (!alreadyQueued) {
                 schedulesToAdd.push({
@@ -120,34 +123,38 @@ const Index = () => {
           }
         }
 
-        // Add all missing schedules (with delay between each to prevent race conditions)
-        // 후불제 정산정리는 사용자/카테고리 없이 빈 값으로 등록하여 중복 방지
+        // 누락된 스케줄 추가 (사용자/카테고리 없이)
         if (schedulesToAdd.length > 0) {
           for (const schedule of schedulesToAdd) {
-            await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between adds
+            await new Promise(resolve => setTimeout(resolve, 150));
             addSchedule({
               ...schedule,
-              userId: '',  // 사용자 없음
-              categoryId: '',  // 카테고리 없음
+              userId: '',
+              categoryId: '',
             });
           }
         }
         
-        // Mark as initialized both in ref and sessionStorage
+        // 초기화 완료 표시
         settlementInitializedRef.current = true;
-        sessionStorage.setItem(sessionKey, 'true');
+        localStorage.setItem(storageKey, 'done');
+        
+        // 오래된 키 정리 (어제 이전 키 삭제)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const oldKey = `settlement_init_${yesterday.toISOString().split('T')[0]}`;
+        localStorage.removeItem(oldKey);
       } finally {
         isCheckingRef.current = false;
       }
     };
 
-    // Only run if we have settings loaded and schedules array exists
-    if (settings.users.length > 0 && Array.isArray(schedules)) {
-      // Longer delay to ensure schedules are fully loaded from Firebase
+    // 스케줄 배열이 존재할 때만 실행 (3초 대기 후)
+    if (Array.isArray(schedules)) {
       const timeoutId = setTimeout(checkAndAddMonthlySettlement, 3000);
       return () => clearTimeout(timeoutId);
     }
-  }, [isLoading, settings.users.length, schedules]);
+  }, [isLoading, schedules, addSchedule]);
 
   // Get holidays for current year and adjacent years
   const holidays = useMemo(() => {
