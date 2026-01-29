@@ -121,15 +121,14 @@ const Index = () => {
         }
 
         // Add all missing schedules (with delay between each to prevent race conditions)
-        if (schedulesToAdd.length > 0 && settings.users.length > 0) {
-          const settlementCategory = settings.categories.find(c => c.name === '업무') || settings.categories[0];
-          
+        // 후불제 정산정리는 사용자/카테고리 없이 빈 값으로 등록하여 중복 방지
+        if (schedulesToAdd.length > 0) {
           for (const schedule of schedulesToAdd) {
             await new Promise(resolve => setTimeout(resolve, 100)); // Small delay between adds
             addSchedule({
               ...schedule,
-              userId: settings.users[0]?.id ?? '',
-              categoryId: settlementCategory?.id ?? '',
+              userId: '',  // 사용자 없음
+              categoryId: '',  // 카테고리 없음
             });
           }
         }

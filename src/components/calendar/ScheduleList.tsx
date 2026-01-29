@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Check, Pencil, X, Image, FileText, Calendar } from 'lucide-react';
+import { Trash2, Check, Pencil, X, Image, FileText, Calendar, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -263,15 +263,33 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
           <div className="absolute inset-0 bg-black/70" onClick={() => setViewingFile(null)} />
           <div className="relative bg-card rounded-xl shadow-xl max-w-4xl max-h-[90vh] mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-4 border-b">
-              <span className="font-medium truncate">{viewingFile.name}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setViewingFile(null)}
-                className="shrink-0"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              <span className="font-medium truncate flex-1 mr-2">{viewingFile.name}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* 다운로드 버튼 */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = viewingFile.url;
+                    link.download = viewingFile.name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  다운로드
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setViewingFile(null)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
             <div className="p-4 overflow-auto max-h-[calc(90vh-80px)]">
               {viewingFile.type === 'image' ? (

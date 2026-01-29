@@ -182,16 +182,31 @@ export function CalendarGrid({
                 {daySchedules.slice(0, 3).map((schedule) => {
                   const isBirthday = schedule.title.includes('생일') || schedule.title.startsWith('🎂');
                   const isCompleted = schedule.isCompleted ?? false;
+                  const hasCategoryColor = schedule.categoryId && schedule.categoryId !== '';
                   return (
                     <div
                       key={schedule.id}
                       className={cn(
-                        "text-[10px] text-white px-1 py-0.5 rounded truncate",
-                        getUserColor(schedule.userId),
-                        isCompleted && "line-through opacity-60"
+                        "flex items-center gap-1 text-[10px]",
+                        isCompleted && "opacity-60"
                       )}
                     >
-                      {isBirthday ? '🎂 ' : ''}{schedule.title.replace(/^🎂\s*/, '')}
+                      {/* 카테고리 색상 동그라미 */}
+                      <span 
+                        className={cn(
+                          "w-2 h-2 rounded-full shrink-0",
+                          hasCategoryColor ? getCategoryColor(schedule.categoryId) : "bg-gray-400"
+                        )}
+                      />
+                      <span
+                        className={cn(
+                          "text-white px-1 py-0.5 rounded truncate flex-1",
+                          schedule.userId ? getUserColor(schedule.userId) : "bg-gray-500",
+                          isCompleted && "line-through"
+                        )}
+                      >
+                        {isBirthday ? '🎂 ' : ''}{schedule.title.replace(/^🎂\s*/, '')}
+                      </span>
                     </div>
                   );
                 })}
