@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Image, FileText } from 'lucide-react';
+import { X, Image, FileText, MapPin, Copy, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +16,7 @@ import { User, Category, ScheduleFile } from '@/types/calendar';
 interface ScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: { title: string; description: string; userId: string; categoryId: string; files?: ScheduleFile[] }) => void;
+  onSubmit: (data: { title: string; description: string; userId: string; categoryId: string; files?: ScheduleFile[]; address?: string }) => void;
   date: string;
   users: User[];
   categories: Category[];
@@ -39,6 +39,8 @@ export function ScheduleModal({
   const [userId, setUserId] = useState(selectedUserId || (users[0]?.id ?? ''));
   const [categoryId, setCategoryId] = useState(selectedCategoryId || (categories[0]?.id ?? ''));
   const [files, setFiles] = useState<ScheduleFile[]>([]);
+  const [address, setAddress] = useState('');
+  const [addressCopied, setAddressCopied] = useState(false);
 
   // Update userId when selectedUserId changes (from header click)
   useEffect(() => {
@@ -92,11 +94,13 @@ export function ScheduleModal({
       userId,
       categoryId,
       files: files.length > 0 ? files : undefined,
+      address: address.trim() || undefined,
     });
 
     setTitle('');
     setDescription('');
     setFiles([]);
+    setAddress('');
     onClose();
   };
 
@@ -104,7 +108,46 @@ export function ScheduleModal({
     setTitle('');
     setDescription('');
     setFiles([]);
+    setAddress('');
     onClose();
+  };
+
+  // 주소 복사 기능
+  const handleCopyAddress = async () => {
+    if (!address.trim()) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setAddressCopied(true);
+      setTimeout(() => setAddressCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
+  };
+
+  // 카카오내비 연동 기능
+  const handleKakaoNavi = () => {
+    if (!address.trim()) return;
+    // 카카오내비 URL Scheme
+    // kakaomap://route?ep=번지주소&by=CAR 형식 또는
+    // 카카오내비 앱이 설치되어 있으면 직접 실행
+    const encodedAddress = encodeURIComponent(address);
+    
+    // 카카오내비 앱 URL Scheme (목적지 검색 후 길안내)
+    const kakaoNaviUrl = `kakaomap://search?q=${encodedAddress}`;
+    
+    // 모바일 환경에서는 앱 실행 시도, 실패 시 웹으로 리다이렉트
+    const webFallbackUrl = `https://map.kakao.com/?q=${encodedAddress}`;
+    
+    // 앱 실행 시도
+    const startTime = Date.now();
+    window.location.href = kakaoNaviUrl;
+    
+    // 1초 후에도 페이지가 그대로면 앱이 없는 것으로 판단, 웹으로 이동
+    setTimeout(() => {
+      if (Date.now() - startTime < 1500) {
+        window.open(webFallbackUrl, '_blank');
+      }
+    }, 1000);
   };
 
   const formatDisplayDate = (dateStr: string) => {
@@ -181,6 +224,49 @@ export function ScheduleModal({
               placeholder="상세 내용을 입력하세요 (선택사항)"
               rows={3}
             />
+          </div>
+
+          {/* 주소 입력 섹션 */}
+          <div className="space-y-2">
+            <Label htmlFor="address">
+              <div className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                주소 (카카오내비 연동)
+              </div>
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="address"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="주소를 입력하세요 (선택사항)"
+                className="flex-1"
+              />
+            </div>
+            {address.trim() && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAddress}
+                  className="flex items-center gap-1 text-xs"
+                >
+                  <Copy className="h-3 w-3" />
+                  {addressCopied ? '복사됨!' : '주소 복사'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleKakaoNavi}
+                  className="flex items-center gap-1 text-xs bg-[#FEE500] hover:bg-[#FDD835] text-black border-[#FEE500]"
+                >
+                  <Navigation className="h-3 w-3" />
+                  카카오내비
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* File upload section */}

@@ -26,6 +26,7 @@ export interface Schedule {
   createdAt: string;
   isCompleted?: boolean; // 완료 여부
   files?: ScheduleFile[]; // 첨부 파일 (이미지, PDF)
+  address?: string; // 주소 (카카오내비 연동용)
 }
 
 export interface CalendarSettings {

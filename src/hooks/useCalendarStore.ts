@@ -169,6 +169,11 @@ export function useCalendarStore() {
         scheduleData.files = newSchedule.files;
       }
       
+      // Add address if present
+      if (newSchedule.address) {
+        scheduleData.address = newSchedule.address;
+      }
+      
       await setDoc(doc(db, SCHEDULES_COLLECTION, newSchedule.id), scheduleData);
     } catch (error) {
       console.error('Failed to add schedule to Firebase:', error);
@@ -221,6 +226,11 @@ export function useCalendarStore() {
         scheduleData.files = schedule.files;
       }
       
+      // Preserve address if present
+      if (schedule.address) {
+        scheduleData.address = schedule.address;
+      }
+      
       await setDoc(doc(db, SCHEDULES_COLLECTION, id), scheduleData);
     } catch (error) {
       console.error('Failed to toggle schedule completion in Firebase:', error);
@@ -256,6 +266,11 @@ export function useCalendarStore() {
       // Add files if present
       if (updatedSchedule.files && updatedSchedule.files.length > 0) {
         scheduleData.files = updatedSchedule.files;
+      }
+      
+      // Add address if present
+      if (updatedSchedule.address) {
+        scheduleData.address = updatedSchedule.address;
       }
       
       await setDoc(doc(db, SCHEDULES_COLLECTION, id), scheduleData);

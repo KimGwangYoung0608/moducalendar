@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2, Check, Pencil, X, Image, FileText, Calendar, Download } from 'lucide-react';
+import { Trash2, Check, Pencil, X, Image, FileText, Calendar, Download, MapPin, Copy, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,9 +27,13 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
   const [editUserId, setEditUserId] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editFiles, setEditFiles] = useState<ScheduleFile[]>([]);
+  const [editAddress, setEditAddress] = useState('');
   
   // Image/PDF viewer state
   const [viewingFile, setViewingFile] = useState<ScheduleFile | null>(null);
+  
+  // 주소 복사 상태
+  const [copiedAddressId, setCopiedAddressId] = useState<string | null>(null);
 
   const getUserColor = (userId: string) => {
     const user = users.find(u => u.id === userId);
@@ -69,6 +73,7 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     setEditUserId(schedule.userId);
     setEditCategoryId(schedule.categoryId);
     setEditFiles(schedule.files || []);
+    setEditAddress(schedule.address || '');
   };
 
   const handleEditSave = () => {
@@ -81,6 +86,7 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
       userId: editUserId,
       categoryId: editCategoryId,
       files: editFiles,
+      address: editAddress.trim() || undefined,
     });
     
     setEditingSchedule(null);
@@ -94,6 +100,34 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     setEditUserId('');
     setEditCategoryId('');
     setEditFiles([]);
+    setEditAddress('');
+  };
+
+  // 주소 복사 기능
+  const handleCopyAddress = async (address: string, scheduleId: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopiedAddressId(scheduleId);
+      setTimeout(() => setCopiedAddressId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy address:', err);
+    }
+  };
+
+  // 카카오내비 연동 기능
+  const handleKakaoNavi = (address: string) => {
+    const encodedAddress = encodeURIComponent(address);
+    const kakaoNaviUrl = `kakaomap://search?q=${encodedAddress}`;
+    const webFallbackUrl = `https://map.kakao.com/?q=${encodedAddress}`;
+    
+    const startTime = Date.now();
+    window.location.href = kakaoNaviUrl;
+    
+    setTimeout(() => {
+      if (Date.now() - startTime < 1500) {
+        window.open(webFallbackUrl, '_blank');
+      }
+    }, 1000);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -184,6 +218,34 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                   )}>
                     {schedule.description}
                   </p>
+                )}
+                
+                {/* 주소 표시 */}
+                {schedule.address && (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-muted/50 rounded-lg">
+                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm text-muted-foreground flex-1 truncate">
+                      {schedule.address}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCopyAddress(schedule.address!, schedule.id)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      {copiedAddressId === schedule.id ? '복사됨!' : '복사'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleKakaoNavi(schedule.address!)}
+                      className="h-7 px-2 text-xs bg-[#FEE500] hover:bg-[#FDD835] text-black"
+                    >
+                      <Navigation className="h-3 w-3 mr-1" />
+                      내비
+                    </Button>
+                  </div>
                 )}
                 
                 {/* File attachments */}
@@ -390,6 +452,22 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* 주소 입력 섹션 */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-address">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4" />
+                    주소 (카카오내비 연동)
+                  </div>
+                </Label>
+                <Input
+                  id="edit-address"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  placeholder="주소를 입력하세요 (선택사항)"
+                />
               </div>
 
               {/* File upload section */}
