@@ -132,19 +132,19 @@ export function ScheduleModal({
     // T맵 앱 URL Scheme (목적지 검색)
     const tmapAppUrl = `tmap://search?name=${encodedAddress}`;
     
-    // 웹 폴백 URL (T맵 웹)
-    const webFallbackUrl = `https://tmap.life/search?address=${encodedAddress}`;
+    // 웹 폴백 URL (네이버 지도 - T맵 웹이 불안정하여 대체)
+    const webFallbackUrl = `https://map.naver.com/v5/search/${encodedAddress}`;
     
-    // 앱 실행 시도
-    const startTime = Date.now();
-    window.location.href = tmapAppUrl;
+    // 모바일 여부 확인
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     
-    // 1초 후에도 페이지가 그대로면 앱이 없는 것으로 판단, 웹으로 이동
-    setTimeout(() => {
-      if (Date.now() - startTime < 1500) {
-        window.open(webFallbackUrl, '_blank');
-      }
-    }, 1000);
+    if (isMobile) {
+      // 모바일: T맵 앱 실행 시도
+      window.location.href = tmapAppUrl;
+    } else {
+      // PC: 바로 네이버 지도 웹으로 이동
+      window.open(webFallbackUrl, '_blank');
+    }
   };
 
   const formatDisplayDate = (dateStr: string) => {

@@ -119,17 +119,19 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     const encodedAddress = encodeURIComponent(address);
     // T맵 앱 스킴 (목적지 검색)
     const tmapAppUrl = `tmap://search?name=${encodedAddress}`;
-    // 웹 폴백 URL (T맵 웹)
-    const webFallbackUrl = `https://tmap.life/search?address=${encodedAddress}`;
+    // 웹 폴백 URL (네이버 지도 - T맵 웹이 불안정하여 대체)
+    const webFallbackUrl = `https://map.naver.com/v5/search/${encodedAddress}`;
     
-    const startTime = Date.now();
-    window.location.href = tmapAppUrl;
+    // 모바일 여부 확인
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     
-    setTimeout(() => {
-      if (Date.now() - startTime < 1500) {
-        window.open(webFallbackUrl, '_blank');
-      }
-    }, 1000);
+    if (isMobile) {
+      // 모바일: T맵 앱 실행 시도
+      window.location.href = tmapAppUrl;
+    } else {
+      // PC: 바로 네이버 지도 웹으로 이동
+      window.open(webFallbackUrl, '_blank');
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
