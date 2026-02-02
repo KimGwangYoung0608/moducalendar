@@ -114,14 +114,16 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
     }
   };
 
-  // 카카오내비 연동 기능
-  const handleKakaoNavi = (address: string) => {
+  // T맵 내비 연동 기능
+  const handleTmapNavi = (address: string) => {
     const encodedAddress = encodeURIComponent(address);
-    const kakaoNaviUrl = `kakaomap://search?q=${encodedAddress}`;
-    const webFallbackUrl = `https://map.kakao.com/?q=${encodedAddress}`;
+    // T맵 앱 스킴 (목적지 검색)
+    const tmapAppUrl = `tmap://search?name=${encodedAddress}`;
+    // 웹 폴백 URL (T맵 웹)
+    const webFallbackUrl = `https://tmap.life/search?address=${encodedAddress}`;
     
     const startTime = Date.now();
-    window.location.href = kakaoNaviUrl;
+    window.location.href = tmapAppUrl;
     
     setTimeout(() => {
       if (Date.now() - startTime < 1500) {
@@ -239,11 +241,11 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleKakaoNavi(schedule.address!)}
-                      className="h-7 px-2 text-xs bg-[#FEE500] hover:bg-[#FDD835] text-black"
+                      onClick={() => handleTmapNavi(schedule.address!)}
+                      className="h-7 px-2 text-xs bg-[#1C64F2] hover:bg-[#1A56DB] text-white"
                     >
                       <Navigation className="h-3 w-3 mr-1" />
-                      내비
+                      T맵
                     </Button>
                   </div>
                 )}
@@ -459,7 +461,7 @@ export function ScheduleList({ schedules, users, categories, onDelete, onToggleC
                 <Label htmlFor="edit-address">
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    주소 (카카오내비 연동)
+                    주소 (T맵 연동)
                   </div>
                 </Label>
                 <Input

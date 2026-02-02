@@ -124,23 +124,20 @@ export function ScheduleModal({
     }
   };
 
-  // 카카오내비 연동 기능
-  const handleKakaoNavi = () => {
+  // T맵 내비 연동 기능
+  const handleTmapNavi = () => {
     if (!address.trim()) return;
-    // 카카오내비 URL Scheme
-    // kakaomap://route?ep=번지주소&by=CAR 형식 또는
-    // 카카오내비 앱이 설치되어 있으면 직접 실행
     const encodedAddress = encodeURIComponent(address);
     
-    // 카카오내비 앱 URL Scheme (목적지 검색 후 길안내)
-    const kakaoNaviUrl = `kakaomap://search?q=${encodedAddress}`;
+    // T맵 앱 URL Scheme (목적지 검색)
+    const tmapAppUrl = `tmap://search?name=${encodedAddress}`;
     
-    // 모바일 환경에서는 앱 실행 시도, 실패 시 웹으로 리다이렉트
-    const webFallbackUrl = `https://map.kakao.com/?q=${encodedAddress}`;
+    // 웹 폴백 URL (T맵 웹)
+    const webFallbackUrl = `https://tmap.life/search?address=${encodedAddress}`;
     
     // 앱 실행 시도
     const startTime = Date.now();
-    window.location.href = kakaoNaviUrl;
+    window.location.href = tmapAppUrl;
     
     // 1초 후에도 페이지가 그대로면 앱이 없는 것으로 판단, 웹으로 이동
     setTimeout(() => {
@@ -231,7 +228,7 @@ export function ScheduleModal({
             <Label htmlFor="address">
               <div className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
-                주소 (카카오내비 연동)
+                주소 (T맵 연동)
               </div>
             </Label>
             <div className="flex gap-2">
@@ -259,11 +256,11 @@ export function ScheduleModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleKakaoNavi}
-                  className="flex items-center gap-1 text-xs bg-[#FEE500] hover:bg-[#FDD835] text-black border-[#FEE500]"
+                  onClick={handleTmapNavi}
+                  className="flex items-center gap-1 text-xs bg-[#1C64F2] hover:bg-[#1A56DB] text-white border-[#1C64F2]"
                 >
                   <Navigation className="h-3 w-3" />
-                  카카오내비
+                  T맵
                 </Button>
               </div>
             )}
