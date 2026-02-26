@@ -25,6 +25,11 @@ const getLastMondayOfMonth = (year: number, month: number): Date => {
   return lastMonday;
 };
 
+// Helper function to get last day of a month
+const getLastDayOfMonth = (year: number, month: number): Date => {
+  return new Date(year, month + 1, 0); // Last day of month
+};
+
 // Helper function to add days to a date
 const addDays = (dateStr: string, days: number): string => {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -60,6 +65,7 @@ const Index = () => {
 
   // Track if monthly settlement schedules have been initialized
   const settlementInitializedRef = useRef(false);
+  const chacolabInitializedRef = useRef(false);
   const isCheckingRef = useRef(false);
 
   // 후불제 정산정리 스케줄 생성 - 앱 로드 시 한 번만 실행
@@ -155,6 +161,101 @@ const Index = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [isLoading, schedules, addSchedule]);
+
+  // 차코랩불량 사진전송 스케줄 생성 - 매월 말일, 사용자: 이승진, 카테고리: 업무
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `chacolab_init_${today}`;
+    
+    if (localStorage.getItem(storageKey) === 'done') {
+      chacolabInitializedRef.current = true;
+      return;
+    }
+
+    if (chacolabInitializedRef.current || isLoading || isCheckingRef.current) {
+      return;
+    }
+
+    if (!Array.isArray(schedules)) {
+      return;
+    }
+
+    const checkAndAddChacolabSchedule = async () => {
+      if (isCheckingRef.current || chacolabInitializedRef.current) {
+        return;
+      }
+      isCheckingRef.current = true;
+
+      try {
+        const year = new Date().getFullYear();
+        const schedulesToAdd: Array<{date: string, title: string, description: string, userId: string, categoryId: string}> = [];
+        
+        const currentSchedules = [...schedules];
+        
+        // 사용자 "이승진" 찾기
+        const userSeungjin = settings.users.find(u => u.name === '이승진');
+        // 카테고리 "업무" 찾기
+        const categoryWork = settings.categories.find(c => c.name === '업무');
+        
+        // 사용자나 카테고리가 없으면 스킵
+        if (!userSeungjin || !categoryWork) {
+          chacolabInitializedRef.current = true;
+          localStorage.setItem(storageKey, 'done');
+          isCheckingRef.current = false;
+          return;
+        }
+        
+        // 현재 연도와 다음 연도 체크
+        for (let y = year; y <= year + 1; y++) {
+          for (let m = 0; m < 12; m++) {
+            const lastDay = getLastDayOfMonth(y, m);
+            const dateStr = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+            
+            // 해당 날짜에 차코랩불량 사진전송이 이미 있는지 체크
+            const existingSchedule = currentSchedules.find(s => 
+              s.date === dateStr && s.title.includes('차코랩불량 사진전송')
+            );
+            
+            if (!existingSchedule) {
+              const alreadyQueued = schedulesToAdd.find(s => s.date === dateStr);
+              if (!alreadyQueued) {
+                schedulesToAdd.push({
+                  date: dateStr,
+                  title: '✨️차코랩불량 사진전송',
+                  description: `${lastDay.getFullYear()}년 ${lastDay.getMonth() + 1}월 말일 사진 전송`,
+                  userId: userSeungjin.id,
+                  categoryId: categoryWork.id,
+                });
+              }
+            }
+          }
+        }
+
+        // 누락된 스케줄 추가
+        if (schedulesToAdd.length > 0) {
+          for (const schedule of schedulesToAdd) {
+            await new Promise(resolve => setTimeout(resolve, 150));
+            addSchedule(schedule);
+          }
+        }
+        
+        chacolabInitializedRef.current = true;
+        localStorage.setItem(storageKey, 'done');
+        
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const oldKey = `chacolab_init_${yesterday.toISOString().split('T')[0]}`;
+        localStorage.removeItem(oldKey);
+      } finally {
+        isCheckingRef.current = false;
+      }
+    };
+
+    if (Array.isArray(schedules) && settings.users.length > 0 && settings.categories.length > 0) {
+      const timeoutId = setTimeout(checkAndAddChacolabSchedule, 4000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading, schedules, settings.users, settings.categories, addSchedule]);
 
   // Get holidays for current year and adjacent years
   const holidays = useMemo(() => {
