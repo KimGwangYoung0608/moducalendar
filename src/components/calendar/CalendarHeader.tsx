@@ -81,10 +81,8 @@ export function CalendarHeader({
                   onUserClickForSchedule(user.id);
                 }}
                 className={cn(
-                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95",
-                  isSelected 
-                    ? `${getColorClass(user.colorIndex)} text-white border-transparent`
-                    : "bg-transparent"
+                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 bg-transparent hover:bg-transparent",
+                  isSelected && `${getColorClass(user.colorIndex)} text-white border-transparent hover:opacity-90`
                 )}
               >
                 <span
@@ -114,10 +112,8 @@ export function CalendarHeader({
                   onCategoryClickForSchedule(category.id);
                 }}
                 className={cn(
-                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95",
-                  isSelected 
-                    ? `${getColorClass(category.colorIndex)} text-white border-transparent`
-                    : "bg-transparent"
+                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 bg-transparent hover:bg-transparent",
+                  isSelected && `${getColorClass(category.colorIndex)} text-white border-transparent hover:opacity-90`
                 )}
               >
                 <span
