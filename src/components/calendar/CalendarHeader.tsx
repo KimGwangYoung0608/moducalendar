@@ -82,7 +82,9 @@ export function CalendarHeader({
                 }}
                 className={cn(
                   "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95",
-                  isSelected && `${getColorClass(user.colorIndex)} text-white border-transparent`
+                  isSelected 
+                    ? `${getColorClass(user.colorIndex)} text-white border-transparent`
+                    : "bg-transparent"
                 )}
               >
                 <span
@@ -113,7 +115,9 @@ export function CalendarHeader({
                 }}
                 className={cn(
                   "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95",
-                  isSelected && `${getColorClass(category.colorIndex)} text-white border-transparent`
+                  isSelected 
+                    ? `${getColorClass(category.colorIndex)} text-white border-transparent`
+                    : "bg-transparent"
                 )}
               >
                 <span
