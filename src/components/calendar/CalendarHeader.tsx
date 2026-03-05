@@ -2,18 +2,19 @@ import { ChevronLeft, ChevronRight, Settings, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { User, Category } from '@/types/calendar';
 import { getColorClass } from '@/lib/colors';
+import { cn } from '@/lib/utils';
 
 interface CalendarHeaderProps {
   currentDate: Date;
   users: User[];
   categories: Category[];
-  selectedUserId: string | null;
-  selectedCategoryId: string | null;
+  selectedUserIds: string[];
+  selectedCategoryIds: string[];
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onTodaySchedule: () => void;
-  onUserSelect: (userId: string | null) => void;
-  onCategorySelect: (categoryId: string | null) => void;
+  onUserSelect: (userId: string) => void;
+  onCategorySelect: (categoryId: string) => void;
   onOpenSettings: () => void;
   onUserClickForSchedule: (userId: string) => void;
   onCategoryClickForSchedule: (categoryId: string) => void;
@@ -23,8 +24,8 @@ export function CalendarHeader({
   currentDate,
   users,
   categories,
-  selectedUserId,
-  selectedCategoryId,
+  selectedUserIds,
+  selectedCategoryIds,
   onPrevMonth,
   onNextMonth,
   onTodaySchedule,
@@ -65,48 +66,70 @@ export function CalendarHeader({
 
       {/* User & Category Filter */}
       <div className="flex flex-wrap gap-4">
-        {/* Users - removed 전체 button */}
+        {/* Users - multi-select with color toggle */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-muted-foreground">사용자:</span>
-          {users.map((user) => (
-            <Button
-              key={user.id}
-              variant={selectedUserId === user.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                onUserSelect(selectedUserId === user.id ? null : user.id);
-                onUserClickForSchedule(user.id);
-              }}
-              className="h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95"
-            >
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${getColorClass(user.colorIndex)}`}
-              />
-              {user.name}
-            </Button>
-          ))}
+          {users.map((user) => {
+            const isSelected = selectedUserIds.includes(user.id);
+            return (
+              <Button
+                key={user.id}
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onUserSelect(user.id);
+                  onUserClickForSchedule(user.id);
+                }}
+                className={cn(
+                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 border-2",
+                  isSelected 
+                    ? `${getColorClass(user.colorIndex)} text-white border-transparent` 
+                    : "bg-transparent border-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full",
+                    isSelected ? "bg-white/80" : getColorClass(user.colorIndex)
+                  )}
+                />
+                {user.name}
+              </Button>
+            );
+          })}
         </div>
 
-        {/* Categories - removed 전체 button */}
+        {/* Categories - multi-select with color toggle */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium text-muted-foreground">카테고리:</span>
-          {categories.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategoryId === category.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => {
-                onCategorySelect(selectedCategoryId === category.id ? null : category.id);
-                onCategoryClickForSchedule(category.id);
-              }}
-              className="h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95"
-            >
-              <span
-                className={`w-2.5 h-2.5 rounded-full ${getColorClass(category.colorIndex)}`}
-              />
-              {category.name}
-            </Button>
-          ))}
+          {categories.map((category) => {
+            const isSelected = selectedCategoryIds.includes(category.id);
+            return (
+              <Button
+                key={category.id}
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onCategorySelect(category.id);
+                  onCategoryClickForSchedule(category.id);
+                }}
+                className={cn(
+                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 border-2",
+                  isSelected 
+                    ? `${getColorClass(category.colorIndex)} text-white border-transparent` 
+                    : "bg-transparent border-muted-foreground/30"
+                )}
+              >
+                <span
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-full",
+                    isSelected ? "bg-white/80" : getColorClass(category.colorIndex)
+                  )}
+                />
+                {category.name}
+              </Button>
+            );
+          })}
         </div>
       </div>
     </div>

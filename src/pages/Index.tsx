@@ -54,8 +54,8 @@ const Index = () => {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   // For schedule modal auto-selection
   const [scheduleDefaultUserId, setScheduleDefaultUserId] = useState<string | null>(null);
   const [scheduleDefaultCategoryId, setScheduleDefaultCategoryId] = useState<string | null>(null);
@@ -268,22 +268,22 @@ const Index = () => {
     ];
   }, [currentDate]);
 
-  // Filter schedules based on selected user and category
+  // Filter schedules based on selected users and categories (multi-select)
   const filteredSchedules = useMemo(() => {
     let filtered = schedules;
     
-    // Filter by selected user
-    if (selectedUserId) {
-      filtered = filtered.filter(s => s.userId === selectedUserId);
+    // Filter by selected users (if any selected, show schedules from any of them)
+    if (selectedUserIds.length > 0) {
+      filtered = filtered.filter(s => selectedUserIds.includes(s.userId));
     }
     
-    // Filter by selected category
-    if (selectedCategoryId) {
-      filtered = filtered.filter(s => s.categoryId === selectedCategoryId);
+    // Filter by selected categories (if any selected, show schedules from any of them)
+    if (selectedCategoryIds.length > 0) {
+      filtered = filtered.filter(s => selectedCategoryIds.includes(s.categoryId));
     }
     
     return filtered;
-  }, [schedules, selectedUserId, selectedCategoryId]);
+  }, [schedules, selectedUserIds, selectedCategoryIds]);
 
   const selectedDateSchedules = useMemo(() => {
     if (!selectedDate) return [];
@@ -382,6 +382,24 @@ const Index = () => {
     }
   };
 
+  // Handler for user toggle - multi-select
+  const handleUserSelect = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  // Handler for category toggle - multi-select
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategoryIds(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
   // Handler for user click - set default for schedule modal
   const handleUserClickForSchedule = (userId: string) => {
     setScheduleDefaultUserId(userId);
@@ -446,13 +464,13 @@ const Index = () => {
           currentDate={currentDate}
           users={settings.users}
           categories={settings.categories}
-          selectedUserId={selectedUserId}
-          selectedCategoryId={selectedCategoryId}
+          selectedUserIds={selectedUserIds}
+          selectedCategoryIds={selectedCategoryIds}
           onPrevMonth={handlePrevMonth}
           onNextMonth={handleNextMonth}
           onTodaySchedule={handleTodaySchedule}
-          onUserSelect={setSelectedUserId}
-          onCategorySelect={setSelectedCategoryId}
+          onUserSelect={handleUserSelect}
+          onCategorySelect={handleCategorySelect}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
           onUserClickForSchedule={handleUserClickForSchedule}
           onCategoryClickForSchedule={handleCategoryClickForSchedule}
@@ -516,8 +534,8 @@ const Index = () => {
           date={selectedDate ?? ''}
           users={settings.users}
           categories={settings.categories}
-          selectedUserId={scheduleDefaultUserId || selectedUserId}
-          selectedCategoryId={scheduleDefaultCategoryId || selectedCategoryId}
+          selectedUserId={scheduleDefaultUserId || (selectedUserIds.length === 1 ? selectedUserIds[0] : null)}
+          selectedCategoryId={scheduleDefaultCategoryId || (selectedCategoryIds.length === 1 ? selectedCategoryIds[0] : null)}
         />
 
         <SettingsModal
