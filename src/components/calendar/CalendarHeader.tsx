@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Settings, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { User, Category } from '@/types/calendar';
-import { getColorClass } from '@/lib/colors';
+import { getColorClass, getBorderColorClass } from '@/lib/colors';
 import { cn } from '@/lib/utils';
 
 interface CalendarHeaderProps {
@@ -81,14 +81,16 @@ export function CalendarHeader({
                   onUserClickForSchedule(user.id);
                 }}
                 className={cn(
-                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 bg-transparent hover:bg-transparent",
-                  isSelected && `${getColorClass(user.colorIndex)} text-white border-transparent hover:opacity-90`
+                  "h-7 text-xs gap-1.5 transition-all duration-200 bg-transparent hover:bg-transparent text-foreground",
+                  isSelected 
+                    ? `scale-110 shadow-md border-2 ${getBorderColorClass(user.colorIndex)}` 
+                    : "scale-100"
                 )}
               >
                 <span
                   className={cn(
                     "w-2.5 h-2.5 rounded-full",
-                    isSelected ? "bg-white/80" : getColorClass(user.colorIndex)
+                    getColorClass(user.colorIndex)
                   )}
                 />
                 {user.name}
@@ -112,14 +114,16 @@ export function CalendarHeader({
                   onCategoryClickForSchedule(category.id);
                 }}
                 className={cn(
-                  "h-7 text-xs gap-1.5 transition-all duration-200 hover:scale-105 active:scale-95 bg-transparent hover:bg-transparent",
-                  isSelected && `${getColorClass(category.colorIndex)} text-white border-transparent hover:opacity-90`
+                  "h-7 text-xs gap-1.5 transition-all duration-200 bg-transparent hover:bg-transparent text-foreground",
+                  isSelected 
+                    ? `scale-110 shadow-md border-2 ${getBorderColorClass(category.colorIndex)}` 
+                    : "scale-100"
                 )}
               >
                 <span
                   className={cn(
                     "w-2.5 h-2.5 rounded-full",
-                    isSelected ? "bg-white/80" : getColorClass(category.colorIndex)
+                    getColorClass(category.colorIndex)
                   )}
                 />
                 {category.name}

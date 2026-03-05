@@ -22,9 +22,38 @@ export const colorClasses = [
   'bg-[hsl(240,60%,55%)]',   // 20. 인디고
 ];
 
+// 테두리 색상용 클래스
+export const borderColorClasses = [
+  'border-[hsl(220,90%,56%)]',   // 1. 파란색
+  'border-[hsl(160,84%,39%)]',   // 2. 초록색
+  'border-[hsl(340,82%,52%)]',   // 3. 분홍색
+  'border-[hsl(38,92%,50%)]',    // 4. 주황색
+  'border-[hsl(262,83%,58%)]',   // 5. 보라색
+  'border-[hsl(180,70%,45%)]',   // 6. 청록색
+  'border-[hsl(10,78%,54%)]',    // 7. 빨간색
+  'border-[hsl(280,68%,50%)]',   // 8. 자주색
+  'border-[hsl(45,93%,47%)]',    // 9. 노란색
+  'border-[hsl(200,80%,50%)]',   // 10. 하늘색
+  'border-[hsl(330,70%,50%)]',   // 11. 마젠타
+  'border-[hsl(140,70%,40%)]',   // 12. 에메랄드
+  'border-[hsl(25,85%,55%)]',    // 13. 코랄
+  'border-[hsl(290,60%,55%)]',   // 14. 연보라
+  'border-[hsl(170,65%,45%)]',   // 15. 민트
+  'border-[hsl(355,75%,60%)]',   // 16. 연분홍
+  'border-[hsl(210,75%,45%)]',   // 17. 남색
+  'border-[hsl(85,60%,45%)]',    // 18. 연두색
+  'border-[hsl(15,90%,50%)]',    // 19. 진주황
+  'border-[hsl(240,60%,55%)]',   // 20. 인디고
+];
+
 // 색상 인덱스로 색상 클래스 가져오기 (1-based index)
 export const getColorClass = (colorIndex: number): string => {
   return colorClasses[(colorIndex - 1) % colorClasses.length] || colorClasses[0];
+};
+
+// 색상 인덱스로 테두리 색상 클래스 가져오기 (1-based index)
+export const getBorderColorClass = (colorIndex: number): string => {
+  return borderColorClasses[(colorIndex - 1) % borderColorClasses.length] || borderColorClasses[0];
 };
 
 // 총 색상 개수
