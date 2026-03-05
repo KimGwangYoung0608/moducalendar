@@ -7,6 +7,7 @@ import { ScheduleModal } from '@/components/calendar/ScheduleModal';
 import { SettingsModal } from '@/components/calendar/SettingsModal';
 import { ScheduleList } from '@/components/calendar/ScheduleList';
 import { LunarConverter } from '@/components/calendar/LunarConverter';
+import { GonguList } from '@/components/calendar/GonguList';
 import { useCalendarStore } from '@/hooks/useCalendarStore';
 import { getKoreanHolidays, getHolidayForDate } from '@/utils/koreanHolidays';
 import { solarToLunar } from '@/utils/lunarCalendar';
@@ -488,6 +489,12 @@ const Index = () => {
 
         {/* Lunar Converter */}
         <LunarConverter onAddToCalendar={handleAddFromLunar} />
+
+        {/* Gongu Schedule List */}
+        <GonguList 
+          schedules={schedules} 
+          categories={settings.categories} 
+        />
 
         {/* Modals */}
         <ScheduleModal
