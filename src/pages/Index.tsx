@@ -268,10 +268,22 @@ const Index = () => {
     ];
   }, [currentDate]);
 
-  // Schedules are always visible (no category filter - show all schedules)
+  // Filter schedules based on selected user and category
   const filteredSchedules = useMemo(() => {
-    return schedules;
-  }, [schedules]);
+    let filtered = schedules;
+    
+    // Filter by selected user
+    if (selectedUserId) {
+      filtered = filtered.filter(s => s.userId === selectedUserId);
+    }
+    
+    // Filter by selected category
+    if (selectedCategoryId) {
+      filtered = filtered.filter(s => s.categoryId === selectedCategoryId);
+    }
+    
+    return filtered;
+  }, [schedules, selectedUserId, selectedCategoryId]);
 
   const selectedDateSchedules = useMemo(() => {
     if (!selectedDate) return [];
