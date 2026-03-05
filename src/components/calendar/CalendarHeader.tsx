@@ -81,7 +81,7 @@ export function CalendarHeader({
                   onUserClickForSchedule(user.id);
                 }}
                 className={cn(
-                  "h-7 text-xs gap-1.5 transition-all duration-200 bg-transparent hover:bg-transparent text-foreground",
+                  "h-7 text-xs gap-1.5 transition-all duration-200 bg-transparent hover:bg-transparent !text-foreground",
                   isSelected 
                     ? `scale-110 shadow-md border-2 ${getBorderColorClass(user.colorIndex)}` 
                     : "scale-100"
@@ -93,7 +93,7 @@ export function CalendarHeader({
                     getColorClass(user.colorIndex)
                   )}
                 />
-                {user.name}
+                <span className="text-black dark:text-black">{user.name}</span>
               </Button>
             );
           })}
@@ -114,7 +114,7 @@ export function CalendarHeader({
                   onCategoryClickForSchedule(category.id);
                 }}
                 className={cn(
-                  "h-7 text-xs gap-1.5 transition-all duration-200 bg-transparent hover:bg-transparent text-foreground",
+                  "h-7 text-xs gap-1.5 transition-all duration-200 bg-transparent hover:bg-transparent !text-foreground",
                   isSelected 
                     ? `scale-110 shadow-md border-2 ${getBorderColorClass(category.colorIndex)}` 
                     : "scale-100"
@@ -126,7 +126,7 @@ export function CalendarHeader({
                     getColorClass(category.colorIndex)
                   )}
                 />
-                {category.name}
+                <span className="text-black dark:text-black">{category.name}</span>
               </Button>
             );
           })}
