@@ -342,11 +342,13 @@ const Index = () => {
     const category = settings.categories.find(c => c.id === data.categoryId);
     if (category && category.name === '공구') {
       const settlementDate = addDays(selectedDate, 11);
+      // 정산 스케줄은 "이승진" 사용자로 자동 등록
+      const userSeungjin = settings.users.find(u => u.name === '이승진');
       addSchedule({
         title: `정산+${data.title}`,
         description: `${data.title} 공구 정산 (원 스케줄 날짜: ${selectedDate})`,
         date: settlementDate,
-        userId: data.userId,
+        userId: userSeungjin?.id || data.userId,
         categoryId: data.categoryId,
       });
     }
