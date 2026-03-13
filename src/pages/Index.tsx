@@ -67,6 +67,7 @@ const Index = () => {
   // Track if monthly settlement schedules have been initialized
   const settlementInitializedRef = useRef(false);
   const chacolabInitializedRef = useRef(false);
+  const naverAdInitializedRef = useRef(false);
   const isCheckingRef = useRef(false);
 
   // 후불제 정산정리 스케줄 생성 - 앱 로드 시 한 번만 실행
@@ -257,6 +258,99 @@ const Index = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [isLoading, schedules, settings.users, settings.categories, addSchedule]);
+
+  // 네이버 광고결제 스케줄 생성 - 매월 9일, 사용자: 김광영, 카테고리: 없음
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const storageKey = `naver_ad_init_${today}`;
+    
+    if (localStorage.getItem(storageKey) === 'done') {
+      naverAdInitializedRef.current = true;
+      return;
+    }
+
+    if (naverAdInitializedRef.current || isLoading || isCheckingRef.current) {
+      return;
+    }
+
+    if (!Array.isArray(schedules)) {
+      return;
+    }
+
+    const checkAndAddNaverAdSchedule = async () => {
+      if (isCheckingRef.current || naverAdInitializedRef.current) {
+        return;
+      }
+      isCheckingRef.current = true;
+
+      try {
+        const year = new Date().getFullYear();
+        const schedulesToAdd: Array<{date: string, title: string, description: string, userId: string, categoryId: string}> = [];
+        
+        const currentSchedules = [...schedules];
+        
+        // 사용자 "김광영" 찾기
+        const userKwangyoung = settings.users.find(u => u.name === '김광영');
+        
+        // 사용자가 없으면 스킵
+        if (!userKwangyoung) {
+          naverAdInitializedRef.current = true;
+          localStorage.setItem(storageKey, 'done');
+          isCheckingRef.current = false;
+          return;
+        }
+        
+        // 현재 연도와 다음 연도 체크
+        for (let y = year; y <= year + 1; y++) {
+          for (let m = 0; m < 12; m++) {
+            // 매월 9일
+            const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-09`;
+            
+            // 해당 날짜에 네이버 광고결제가 이미 있는지 체크
+            const existingSchedule = currentSchedules.find(s => 
+              s.date === dateStr && s.title.includes('네이버 광고결제')
+            );
+            
+            if (!existingSchedule) {
+              const alreadyQueued = schedulesToAdd.find(s => s.date === dateStr);
+              if (!alreadyQueued) {
+                schedulesToAdd.push({
+                  date: dateStr,
+                  title: '📍네이버 광고결제',
+                  description: `${y}년 ${m + 1}월 네이버 광고 결제일`,
+                  userId: userKwangyoung.id,
+                  categoryId: '', // 카테고리 없음
+                });
+              }
+            }
+          }
+        }
+
+        // 누락된 스케줄 추가
+        if (schedulesToAdd.length > 0) {
+          for (const schedule of schedulesToAdd) {
+            await new Promise(resolve => setTimeout(resolve, 150));
+            addSchedule(schedule);
+          }
+        }
+        
+        naverAdInitializedRef.current = true;
+        localStorage.setItem(storageKey, 'done');
+        
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const oldKey = `naver_ad_init_${yesterday.toISOString().split('T')[0]}`;
+        localStorage.removeItem(oldKey);
+      } finally {
+        isCheckingRef.current = false;
+      }
+    };
+
+    if (Array.isArray(schedules) && settings.users.length > 0) {
+      const timeoutId = setTimeout(checkAndAddNaverAdSchedule, 5000);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isLoading, schedules, settings.users, addSchedule]);
 
   // Get holidays for current year and adjacent years
   const holidays = useMemo(() => {
