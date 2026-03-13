@@ -262,7 +262,7 @@ const Index = () => {
   // 네이버 광고결제 스케줄 생성 - 매월 10일, 사용자/카테고리 없음
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    const storageKey = `naver_ad_init_${today}`;
+    const storageKey = `naver_ad_10th_init_${today}`; // 10일로 변경했으므로 새로운 키 사용
     
     if (localStorage.getItem(storageKey) === 'done') {
       naverAdInitializedRef.current = true;
@@ -330,8 +330,11 @@ const Index = () => {
         
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const oldKey = `naver_ad_init_${yesterday.toISOString().split('T')[0]}`;
+        const oldKey = `naver_ad_10th_init_${yesterday.toISOString().split('T')[0]}`;
         localStorage.removeItem(oldKey);
+        // 기존 9일 키도 제거
+        localStorage.removeItem(`naver_ad_init_${today}`);
+        localStorage.removeItem(`naver_ad_init_${yesterday.toISOString().split('T')[0]}`);
       } finally {
         isCheckingRef.current = false;
       }
