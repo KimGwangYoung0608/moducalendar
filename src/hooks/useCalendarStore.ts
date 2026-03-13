@@ -25,7 +25,6 @@ const defaultSettings: CalendarSettings = {
   users: [
     { id: '1', name: '사용자1', colorIndex: 1 },
     { id: '2', name: '사용자2', colorIndex: 2 },
-    { id: '3', name: '김광영', colorIndex: 3 },
   ],
   categories: [
     { id: '1', name: '업무', colorIndex: 1 },

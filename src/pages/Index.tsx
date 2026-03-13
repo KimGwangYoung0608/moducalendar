@@ -292,13 +292,17 @@ const Index = () => {
         // 사용자 "김광영" 찾기
         const userKwangyoung = settings.users.find(u => u.name === '김광영');
         
-        // 사용자가 없으면 스킵
+        // 사용자가 없으면 경고 메시지 출력 후 스킵
         if (!userKwangyoung) {
+          console.warn('⚠️ 네이버 광고결제 스케줄: "김광영" 사용자를 찾을 수 없습니다. 설정에서 사용자를 추가해주세요.');
+          console.log('📋 현재 등록된 사용자:', settings.users.map(u => u.name).join(', '));
           naverAdInitializedRef.current = true;
           localStorage.setItem(storageKey, 'done');
           isCheckingRef.current = false;
           return;
         }
+        
+        console.log('✅ "김광영" 사용자를 찾았습니다. 네이버 광고결제 스케줄을 생성합니다.');
         
         // 현재 연도와 다음 연도 체크
         for (let y = year; y <= year + 1; y++) {
@@ -328,10 +332,13 @@ const Index = () => {
 
         // 누락된 스케줄 추가
         if (schedulesToAdd.length > 0) {
+          console.log(`📅 ${schedulesToAdd.length}개의 네이버 광고결제 스케줄을 추가합니다.`);
           for (const schedule of schedulesToAdd) {
             await new Promise(resolve => setTimeout(resolve, 150));
             addSchedule(schedule);
           }
+        } else {
+          console.log('✅ 모든 네이버 광고결제 스케줄이 이미 등록되어 있습니다.');
         }
         
         naverAdInitializedRef.current = true;
