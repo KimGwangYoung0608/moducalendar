@@ -350,7 +350,7 @@ const Index = () => {
     };
 
     if (Array.isArray(schedules)) {
-      const timeoutId = setTimeout(checkAndAddNaverAdSchedule, 5000);
+      const timeoutId = setTimeout(checkAndAddNaverAdSchedule, 1000);
       return () => clearTimeout(timeoutId);
     }
   }, [isLoading, schedules, settings.users, addSchedule]);
