@@ -45,7 +45,7 @@ export function MonthlyScheduleModal({
   const [day, setDay] = useState<string>('1');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [userId, setUserId] = useState('');
+  const [userId, setUserId] = useState(users[0]?.id || '');
   const [categoryId, setCategoryId] = useState('');
 
   // Reset form when modal opens/closes or editing schedule changes
@@ -88,46 +88,49 @@ export function MonthlyScheduleModal({
       userId,
       categoryId,
     });
+
+    // Reset form
+    setDay('1');
+    setTitle('');
+    setDescription('');
+    setUserId(users[0]?.id || '');
+    setCategoryId('');
+    onClose();
   };
 
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+  const handleClose = () => {
+    setDay('1');
+    setTitle('');
+    setDescription('');
+    setUserId(users[0]?.id || '');
+    setCategoryId('');
+    onClose();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in-0"
-      onClick={handleOverlayClick}
-    >
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-background rounded-lg shadow-lg animate-in zoom-in-95 slide-in-from-bottom-2">
-        {/* Header */}
-        <div className="sticky top-0 flex items-center justify-between p-6 pb-4 bg-background border-b z-10">
-          <div>
-            <h2 className="text-lg font-semibold">
-              {editingSchedule ? '매월 스케줄 수정' : '매월 스케줄 추가'}
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              {editingSchedule 
-                ? '수정하면 해당 제목의 모든 반복 스케줄이 변경됩니다.'
-                : '매월 반복되는 스케줄을 추가합니다. (현재 연도와 다음 연도 24개월)'}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">닫기</span>
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
+      <div className="relative bg-card rounded-xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={handleClose}
+          className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-5 w-5" />
+        </button>
 
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Day */}
+        <h2 className="text-xl font-semibold mb-1">
+          {editingSchedule ? '매월 스케줄 수정' : '매월 스케줄 추가'}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          {editingSchedule 
+            ? '매월 반복되는 모든 스케줄이 일괄 수정됩니다'
+            : '현재 연도와 다음 연도 24개월에 자동 등록됩니다'}
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Day Input */}
           <div className="space-y-2">
-            <Label htmlFor="day">매월 날짜 *</Label>
+            <Label htmlFor="day">매월 날짜</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="day"
@@ -142,87 +145,89 @@ export function MonthlyScheduleModal({
               <span className="text-sm text-muted-foreground">일</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              1~31 사이의 날짜를 입력하세요. 해당 날짜가 없는 달에는 자동으로 생략됩니다.
+              매월 반복될 날짜 (1~31일). 해당 날짜가 없는 달은 자동 생략됩니다.
             </p>
           </div>
 
-          {/* Title */}
+          {/* Title Input */}
           <div className="space-y-2">
-            <Label htmlFor="title">제목 *</Label>
+            <Label htmlFor="title">스케줄 제목</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="스케줄 제목"
+              placeholder="스케줄 제목을 입력하세요"
               required
             />
           </div>
 
-          {/* Description */}
+          {/* User and Category Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>사용자</Label>
+              <Select value={userId} onValueChange={setUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="사용자 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">없음</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>카테고리</Label>
+              <Select value={categoryId} onValueChange={setCategoryId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="카테고리 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">없음</SelectItem>
+                  {categories
+                    .filter(cat => cat.name !== '생일')
+                    .map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Description Input */}
           <div className="space-y-2">
-            <Label htmlFor="description">설명 (선택)</Label>
+            <Label htmlFor="description">상세 내용</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="스케줄 설명"
+              placeholder="상세 내용을 입력하세요 (선택사항)"
               rows={3}
             />
           </div>
 
-          {/* User */}
-          <div className="space-y-2">
-            <Label htmlFor="user">담당자</Label>
-            <Select value={userId} onValueChange={setUserId}>
-              <SelectTrigger id="user">
-                <SelectValue placeholder="담당자 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">없음</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category">카테고리</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger id="category">
-                <SelectValue placeholder="카테고리 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">없음</SelectItem>
-                {categories
-                  .filter(cat => cat.name !== '생일') // 생일 카테고리 제외
-                  .map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+          {/* Warning for editing */}
           {editingSchedule && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800 font-medium">
+              <p className="text-sm text-amber-800">
                 ⚠️ 주의: 수정 시 매월 반복되는 모든 스케줄이 일괄 변경됩니다.
               </p>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
               취소
             </Button>
-            <Button type="submit">
-              {editingSchedule ? '수정 완료' : '추가'}
+            <Button type="submit" className="flex-1">
+              {editingSchedule ? '수정완료' : '입력완료'}
             </Button>
           </div>
         </form>
