@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Calendar, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Schedule, User, Category } from '@/types/calendar';
@@ -37,7 +37,19 @@ interface MonthlyScheduleGroup {
   description: string;
   userId: string;
   categoryId: string;
-  count: number; // 총 몇 개의 스케줄이 있는지
+  count: number;
+  schedules: Array<{
+    day: number;
+    title: string;
+    description: string;
+    userId: string;
+    categoryId: string;
+  }>;
+}
+
+interface GroupedSchedule {
+  title: string;
+  items: MonthlyScheduleGroup[];
 }
 
 export function MonthlyScheduleList({
@@ -50,18 +62,32 @@ export function MonthlyScheduleList({
 }: MonthlyScheduleListProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<MonthlyScheduleGroup | null>(null);
+  const [expandedTitles, setExpandedTitles] = useState<Set<string>>(new Set());
 
-  // 매월 반복되는 스케줄 찾기 (같은 일(day)과 제목을 가진 스케줄들)
+  // 매월 반복되는 스케줄 찾기 및 생일 제외
   const monthlySchedules = useMemo(() => {
     const scheduleMap = new Map<string, MonthlyScheduleGroup>();
 
     schedules.forEach(schedule => {
+      // 생일 카테고리 제외
+      const category = categories.find(c => c.id === schedule.categoryId);
+      if (category && category.name === '생일') {
+        return;
+      }
+
       const day = parseInt(schedule.date.split('-')[2]);
       const key = `${day}-${schedule.title}`;
 
       if (scheduleMap.has(key)) {
         const existing = scheduleMap.get(key)!;
         existing.count++;
+        existing.schedules.push({
+          day,
+          title: schedule.title,
+          description: schedule.description,
+          userId: schedule.userId,
+          categoryId: schedule.categoryId,
+        });
       } else {
         scheduleMap.set(key, {
           day,
@@ -70,6 +96,13 @@ export function MonthlyScheduleList({
           userId: schedule.userId,
           categoryId: schedule.categoryId,
           count: 1,
+          schedules: [{
+            day,
+            title: schedule.title,
+            description: schedule.description,
+            userId: schedule.userId,
+            categoryId: schedule.categoryId,
+          }],
         });
       }
     });
@@ -78,7 +111,24 @@ export function MonthlyScheduleList({
     return Array.from(scheduleMap.values())
       .filter(group => group.count >= 2)
       .sort((a, b) => a.day - b.day);
-  }, [schedules]);
+  }, [schedules, categories]);
+
+  // 같은 제목끼리 그룹화
+  const groupedSchedules = useMemo(() => {
+    const grouped = new Map<string, MonthlyScheduleGroup[]>();
+
+    monthlySchedules.forEach(schedule => {
+      if (!grouped.has(schedule.title)) {
+        grouped.set(schedule.title, []);
+      }
+      grouped.get(schedule.title)!.push(schedule);
+    });
+
+    return Array.from(grouped.entries()).map(([title, items]) => ({
+      title,
+      items: items.sort((a, b) => a.day - b.day),
+    }));
+  }, [monthlySchedules]);
 
   const getUserName = (userId: string) => {
     const user = users.find(u => u.id === userId);
@@ -95,17 +145,35 @@ export function MonthlyScheduleList({
     return category?.colorIndex || 0;
   };
 
-  const handleAdd = () => {
+  const toggleExpanded = (title: string) => {
+    setExpandedTitles(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(title)) {
+        newSet.delete(title);
+      } else {
+        newSet.add(title);
+      }
+      return newSet;
+    });
+  };
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setEditingSchedule(null);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (schedule: MonthlyScheduleGroup) => {
+  const handleEdit = (e: React.MouseEvent, schedule: MonthlyScheduleGroup) => {
+    e.preventDefault();
+    e.stopPropagation();
     setEditingSchedule(schedule);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (schedule: MonthlyScheduleGroup) => {
+  const handleDelete = (e: React.MouseEvent, schedule: MonthlyScheduleGroup) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (confirm(`매월 ${schedule.day}일의 "${schedule.title}" 스케줄을 모두 삭제하시겠습니까? (총 ${schedule.count}개)`)) {
       onDeleteMonthlySchedule(schedule.day, schedule.title);
     }
@@ -138,7 +206,7 @@ export function MonthlyScheduleList({
               <Calendar className="h-5 w-5" />
               매월 스케줄 관리
               <span className="text-sm font-normal text-muted-foreground ml-2">
-                {monthlySchedules.length}개
+                {groupedSchedules.length}개 제목 / {monthlySchedules.length}개 일정
               </span>
             </CardTitle>
             <Button onClick={handleAdd} size="sm">
@@ -148,82 +216,124 @@ export function MonthlyScheduleList({
           </div>
         </CardHeader>
         <CardContent>
-          {monthlySchedules.length === 0 ? (
+          {groupedSchedules.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               매월 반복되는 스케줄이 없습니다
             </p>
           ) : (
             <div className="space-y-2">
-              {monthlySchedules.map((schedule, index) => {
-                const categoryColor = getCategoryColor(schedule.categoryId);
+              {groupedSchedules.map((group) => {
+                const isExpanded = expandedTitles.has(group.title);
+                const totalCount = group.items.reduce((sum, item) => sum + item.count, 0);
                 
                 return (
                   <div
-                    key={`${schedule.day}-${schedule.title}-${index}`}
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    key={group.title}
+                    className="rounded-lg border bg-card overflow-hidden"
                   >
-                    {/* Day */}
-                    <div className="flex-shrink-0 w-16 text-center">
-                      <div className="text-2xl font-bold text-primary">
-                        {schedule.day}
+                    {/* 제목 헤더 */}
+                    <button
+                      onClick={() => toggleExpanded(group.title)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="shrink-0">
+                          {isExpanded ? (
+                            <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-lg truncate">{group.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {group.items.length}개 날짜 · 총 {totalCount}회 반복
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        매월
-                      </div>
-                    </div>
+                    </button>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold truncate">{schedule.title}</h4>
-                        <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full shrink-0">
-                          {schedule.count}회
-                        </span>
-                      </div>
-                      {schedule.description && (
-                        <p className="text-sm text-muted-foreground truncate mb-1">
-                          {schedule.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-muted-foreground">
-                          👤 {getUserName(schedule.userId)}
-                        </span>
-                        {schedule.categoryId && (
-                          <>
-                            <span className="text-muted-foreground">•</span>
-                            <span
-                              className={cn(
-                                "px-2 py-0.5 rounded-full",
-                                `bg-color-${categoryColor} text-color-${categoryColor}-foreground`
-                              )}
+                    {/* 확장된 내용 */}
+                    {isExpanded && (
+                      <div className="border-t bg-muted/20">
+                        {group.items.map((schedule, index) => {
+                          const categoryColor = getCategoryColor(schedule.categoryId);
+                          
+                          return (
+                            <div
+                              key={`${schedule.day}-${schedule.title}-${index}`}
+                              className="p-4 border-b last:border-b-0 bg-card hover:bg-muted/30 transition-colors"
                             >
-                              {getCategoryName(schedule.categoryId)}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                              <div className="flex items-start gap-3">
+                                {/* Day */}
+                                <div className="flex-shrink-0 w-16 text-center">
+                                  <div className="text-2xl font-bold text-primary">
+                                    {schedule.day}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    매월
+                                  </div>
+                                </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(schedule)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(schedule)}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full shrink-0">
+                                      {schedule.count}회
+                                    </span>
+                                  </div>
+                                  {schedule.description && (
+                                    <p className="text-sm text-muted-foreground mb-2">
+                                      {schedule.description}
+                                    </p>
+                                  )}
+                                  <div className="flex items-center gap-2 text-xs mb-3">
+                                    <span className="text-muted-foreground">
+                                      👤 {getUserName(schedule.userId)}
+                                    </span>
+                                    {schedule.categoryId && (
+                                      <>
+                                        <span className="text-muted-foreground">•</span>
+                                        <span
+                                          className={cn(
+                                            "px-2 py-0.5 rounded-full",
+                                            `bg-color-${categoryColor} text-color-${categoryColor}-foreground`
+                                          )}
+                                        >
+                                          {getCategoryName(schedule.categoryId)}
+                                        </span>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* Actions */}
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => handleEdit(e, schedule)}
+                                      className="h-8"
+                                    >
+                                      <Pencil className="h-3 w-3 mr-1" />
+                                      수정
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={(e) => handleDelete(e, schedule)}
+                                      className="h-8 text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      삭제
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -232,17 +342,19 @@ export function MonthlyScheduleList({
         </CardContent>
       </Card>
 
-      <MonthlyScheduleModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingSchedule(null);
-        }}
-        onSubmit={handleSubmit}
-        users={users}
-        categories={categories}
-        editingSchedule={editingSchedule}
-      />
+      {isModalOpen && (
+        <MonthlyScheduleModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingSchedule(null);
+          }}
+          onSubmit={handleSubmit}
+          users={users}
+          categories={categories}
+          editingSchedule={editingSchedule}
+        />
+      )}
     </>
   );
 }

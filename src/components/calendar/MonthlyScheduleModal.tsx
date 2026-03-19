@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,9 +61,9 @@ export function MonthlyScheduleModal({
       setTitle('');
       setDescription('');
       setUserId(users[0]?.id || '');
-      setCategoryId(categories[0]?.id || '');
+      setCategoryId('');
     }
-  }, [isOpen, editingSchedule, users, categories]);
+  }, [isOpen, editingSchedule, users]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,18 +89,25 @@ export function MonthlyScheduleModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {editingSchedule ? '매월 스케줄 수정' : '매월 스케줄 추가'}
           </DialogTitle>
+          <DialogDescription>
+            {editingSchedule 
+              ? '수정하면 해당 제목의 모든 반복 스케줄이 변경됩니다.'
+              : '매월 반복되는 스케줄을 추가합니다. (현재 연도와 다음 연도 24개월)'}
+          </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
           {/* Day */}
           <div className="space-y-2">
-            <Label htmlFor="day">매월 날짜</Label>
+            <Label htmlFor="day">매월 날짜 *</Label>
             <div className="flex items-center gap-2">
               <Input
                 id="day"
@@ -121,7 +128,7 @@ export function MonthlyScheduleModal({
 
           {/* Title */}
           <div className="space-y-2">
-            <Label htmlFor="title">제목</Label>
+            <Label htmlFor="title">제목 *</Label>
             <Input
               id="title"
               value={title}
@@ -170,30 +177,32 @@ export function MonthlyScheduleModal({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">없음</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
+                {categories
+                  .filter(cat => cat.name !== '생일') // 생일 카테고리 제외
+                  .map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
 
           {editingSchedule && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-sm text-amber-800">
-                ⚠️ 수정 시 매월 반복되는 모든 스케줄이 일괄 변경됩니다.
+              <p className="text-sm text-amber-800 font-medium">
+                ⚠️ 주의: 수정 시 매월 반복되는 모든 스케줄이 일괄 변경됩니다.
               </p>
             </div>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={onClose}>
               취소
             </Button>
             <Button type="submit">
-              {editingSchedule ? '수정' : '추가'}
+              {editingSchedule ? '수정 완료' : '추가'}
             </Button>
           </div>
         </form>
