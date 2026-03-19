@@ -8,6 +8,7 @@ import { SettingsModal } from '@/components/calendar/SettingsModal';
 import { ScheduleList } from '@/components/calendar/ScheduleList';
 import { LunarConverter } from '@/components/calendar/LunarConverter';
 import { GonguList } from '@/components/calendar/GonguList';
+import { MonthlyScheduleList } from '@/components/calendar/MonthlyScheduleList';
 import { useCalendarStore } from '@/hooks/useCalendarStore';
 import { getKoreanHolidays, getHolidayForDate } from '@/utils/koreanHolidays';
 import { solarToLunar } from '@/utils/lunarCalendar';
@@ -521,6 +522,88 @@ const Index = () => {
     return getHolidayForDate(dateStr, holidays);
   };
 
+  // 매월 반복 스케줄 추가
+  const handleAddMonthlySchedule = (data: {
+    day: number;
+    title: string;
+    description: string;
+    userId: string;
+    categoryId: string;
+  }) => {
+    const currentYear = new Date().getFullYear();
+    
+    // 현재 연도와 다음 연도에 걸쳐 스케줄 생성
+    for (let year = currentYear; year <= currentYear + 1; year++) {
+      for (let month = 1; month <= 12; month++) {
+        // 해당 달에 해당 날짜가 존재하는지 확인
+        const lastDayOfMonth = new Date(year, month, 0).getDate();
+        if (data.day <= lastDayOfMonth) {
+          const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
+          
+          addSchedule({
+            title: data.title,
+            description: data.description,
+            date: dateStr,
+            userId: data.userId,
+            categoryId: data.categoryId,
+          });
+        }
+      }
+    }
+  };
+
+  // 매월 반복 스케줄 수정
+  const handleUpdateMonthlySchedule = (
+    day: number,
+    oldTitle: string,
+    updates: {
+      day?: number;
+      title?: string;
+      description?: string;
+      userId?: string;
+      categoryId?: string;
+    }
+  ) => {
+    // 해당 day와 title을 가진 모든 스케줄 찾기
+    const targetSchedules = schedules.filter(s => {
+      const scheduleDay = parseInt(s.date.split('-')[2]);
+      return scheduleDay === day && s.title === oldTitle;
+    });
+
+    // 각 스케줄 업데이트
+    targetSchedules.forEach(schedule => {
+      const updatedData: Partial<Schedule> = {};
+      
+      if (updates.title !== undefined) updatedData.title = updates.title;
+      if (updates.description !== undefined) updatedData.description = updates.description;
+      if (updates.userId !== undefined) updatedData.userId = updates.userId;
+      if (updates.categoryId !== undefined) updatedData.categoryId = updates.categoryId;
+      
+      // 날짜 변경이 있는 경우
+      if (updates.day !== undefined && updates.day !== day) {
+        const [year, month] = schedule.date.split('-');
+        const newDate = `${year}-${month}-${String(updates.day).padStart(2, '0')}`;
+        updatedData.date = newDate;
+      }
+      
+      updateSchedule(schedule.id, updatedData);
+    });
+  };
+
+  // 매월 반복 스케줄 삭제
+  const handleDeleteMonthlySchedule = (day: number, title: string) => {
+    // 해당 day와 title을 가진 모든 스케줄 찾기
+    const targetSchedules = schedules.filter(s => {
+      const scheduleDay = parseInt(s.date.split('-')[2]);
+      return scheduleDay === day && s.title === title;
+    });
+
+    // 각 스케줄 삭제
+    targetSchedules.forEach(schedule => {
+      deleteSchedule(schedule.id);
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-4 py-6">
@@ -620,6 +703,16 @@ const Index = () => {
         <GonguList 
           schedules={schedules} 
           categories={settings.categories} 
+        />
+
+        {/* Monthly Schedule List */}
+        <MonthlyScheduleList
+          schedules={schedules}
+          users={settings.users}
+          categories={settings.categories}
+          onAddMonthlySchedule={handleAddMonthlySchedule}
+          onUpdateMonthlySchedule={handleUpdateMonthlySchedule}
+          onDeleteMonthlySchedule={handleDeleteMonthlySchedule}
         />
 
         {/* Modals */}
