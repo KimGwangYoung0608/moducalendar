@@ -75,6 +75,11 @@ export function MonthlyScheduleList({
         return;
       }
 
+      // 음력 변환기로 추가된 생일 스케줄 제외 (🎂 이모지 포함)
+      if (schedule.title.includes('🎂')) {
+        return;
+      }
+
       const day = parseInt(schedule.date.split('-')[2]);
       const key = `${day}-${schedule.title}`;
 
@@ -342,19 +347,17 @@ export function MonthlyScheduleList({
         </CardContent>
       </Card>
 
-      {isModalOpen && (
-        <MonthlyScheduleModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingSchedule(null);
-          }}
-          onSubmit={handleSubmit}
-          users={users}
-          categories={categories}
-          editingSchedule={editingSchedule}
-        />
-      )}
+      <MonthlyScheduleModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingSchedule(null);
+        }}
+        onSubmit={handleSubmit}
+        users={users}
+        categories={categories}
+        editingSchedule={editingSchedule}
+      />
     </>
   );
 }
