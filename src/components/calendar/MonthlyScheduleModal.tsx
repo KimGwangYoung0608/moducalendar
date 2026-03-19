@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,6 +65,8 @@ export function MonthlyScheduleModal({
     }
   }, [isOpen, editingSchedule, users]);
 
+  if (!isOpen) return null;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -88,23 +90,41 @@ export function MonthlyScheduleModal({
     });
   };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
-    }}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {editingSchedule ? '매월 스케줄 수정' : '매월 스케줄 추가'}
-          </DialogTitle>
-          <DialogDescription>
-            {editingSchedule 
-              ? '수정하면 해당 제목의 모든 반복 스케줄이 변경됩니다.'
-              : '매월 반복되는 스케줄을 추가합니다. (현재 연도와 다음 연도 24개월)'}
-          </DialogDescription>
-        </DialogHeader>
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 animate-in fade-in-0"
+      onClick={handleOverlayClick}
+    >
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-background rounded-lg shadow-lg animate-in zoom-in-95 slide-in-from-bottom-2">
+        {/* Header */}
+        <div className="sticky top-0 flex items-center justify-between p-6 pb-4 bg-background border-b z-10">
+          <div>
+            <h2 className="text-lg font-semibold">
+              {editingSchedule ? '매월 스케줄 수정' : '매월 스케줄 추가'}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {editingSchedule 
+                ? '수정하면 해당 제목의 모든 반복 스케줄이 변경됩니다.'
+                : '매월 반복되는 스케줄을 추가합니다. (현재 연도와 다음 연도 24개월)'}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">닫기</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Day */}
           <div className="space-y-2">
             <Label htmlFor="day">매월 날짜 *</Label>
@@ -206,7 +226,7 @@ export function MonthlyScheduleModal({
             </Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
