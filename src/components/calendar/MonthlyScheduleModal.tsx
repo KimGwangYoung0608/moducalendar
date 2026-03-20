@@ -93,26 +93,42 @@ export function MonthlyScheduleModal({
     setDay('1');
     setTitle('');
     setDescription('');
-    setUserId(users[0]?.id || '');
-    setCategoryId('');
+    setUserId(users[0]?.id || 'none');
+    setCategoryId('none');
     onClose();
   };
 
-  const handleClose = () => {
+  const handleClose = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setDay('1');
     setTitle('');
     setDescription('');
-    setUserId(users[0]?.id || '');
-    setCategoryId('');
+    setUserId(users[0]?.id || 'none');
+    setCategoryId('none');
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={handleClose} />
+      <div 
+        className="absolute inset-0 bg-black/50" 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          handleClose();
+        }} 
+      />
       <div className="relative bg-card rounded-xl shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
         <button
-          onClick={handleClose}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleClose();
+          }}
           className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
         >
           <X className="h-5 w-5" />
@@ -223,7 +239,16 @@ export function MonthlyScheduleModal({
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleClose();
+              }} 
+              className="flex-1"
+            >
               취소
             </Button>
             <Button type="submit" className="flex-1">
