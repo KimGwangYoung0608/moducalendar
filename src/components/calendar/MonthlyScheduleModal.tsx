@@ -45,8 +45,8 @@ export function MonthlyScheduleModal({
   const [day, setDay] = useState<string>('1');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [userId, setUserId] = useState(users[0]?.id || '');
-  const [categoryId, setCategoryId] = useState('');
+  const [userId, setUserId] = useState(users[0]?.id || 'none');
+  const [categoryId, setCategoryId] = useState('none');
 
   // Reset form when modal opens/closes or editing schedule changes
   useEffect(() => {
@@ -60,8 +60,8 @@ export function MonthlyScheduleModal({
       setDay('1');
       setTitle('');
       setDescription('');
-      setUserId(users[0]?.id || '');
-      setCategoryId('');
+      setUserId(users[0]?.id || 'none');
+      setCategoryId('none');
     }
   }, [isOpen, editingSchedule, users]);
 
@@ -85,8 +85,8 @@ export function MonthlyScheduleModal({
       day: dayNum,
       title: title.trim(),
       description: description.trim(),
-      userId,
-      categoryId,
+      userId: userId === 'none' ? '' : userId,
+      categoryId: categoryId === 'none' ? '' : categoryId,
     });
 
     // Reset form
@@ -170,7 +170,7 @@ export function MonthlyScheduleModal({
                   <SelectValue placeholder="사용자 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">없음</SelectItem>
+                  <SelectItem value="none">없음</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.name}
@@ -187,7 +187,7 @@ export function MonthlyScheduleModal({
                   <SelectValue placeholder="카테고리 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">없음</SelectItem>
+                  <SelectItem value="none">없음</SelectItem>
                   {categories
                     .filter(cat => cat.name !== '생일')
                     .map((category) => (
