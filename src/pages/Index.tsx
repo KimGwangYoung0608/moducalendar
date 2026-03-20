@@ -523,7 +523,7 @@ const Index = () => {
   };
 
   // 매월 반복 스케줄 추가
-  const handleAddMonthlySchedule = (data: {
+  const handleAddMonthlySchedule = async (data: {
     day: number;
     title: string;
     description: string;
@@ -531,6 +531,13 @@ const Index = () => {
     categoryId: string;
   }) => {
     const currentYear = new Date().getFullYear();
+    const schedulesToAdd: Array<{
+      title: string;
+      description: string;
+      date: string;
+      userId: string;
+      categoryId: string;
+    }> = [];
     
     // 현재 연도와 다음 연도에 걸쳐 스케줄 생성
     for (let year = currentYear; year <= currentYear + 1; year++) {
@@ -540,7 +547,7 @@ const Index = () => {
         if (data.day <= lastDayOfMonth) {
           const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(data.day).padStart(2, '0')}`;
           
-          addSchedule({
+          schedulesToAdd.push({
             title: data.title,
             description: data.description,
             date: dateStr,
@@ -550,6 +557,19 @@ const Index = () => {
         }
       }
     }
+
+    console.log(`📅 매월 스케줄 추가 시작: ${data.title} (총 ${schedulesToAdd.length}개)`);
+    
+    // 배치로 스케줄 추가 (약간의 딜레이를 두어 Firebase 부하 분산)
+    for (let i = 0; i < schedulesToAdd.length; i++) {
+      await addSchedule(schedulesToAdd[i]);
+      if (i % 6 === 5) {
+        // 6개마다 짧은 딜레이
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    console.log(`✅ 매월 스케줄 추가 완료: ${data.title}`);
   };
 
   // 매월 반복 스케줄 수정
