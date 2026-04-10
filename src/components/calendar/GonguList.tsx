@@ -49,8 +49,8 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     );
   }, [allGonguSchedules, searchQuery]);
 
-  // Find the first schedule that hasn't passed (today or future)
-  const todayIndex = useMemo(() => {
+  // Find the first schedule that hasn't passed (today or future) - based on ALL schedules
+  const todayIndexInAll = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     
     // Find first schedule that is today or in the future (hasn't passed)
@@ -65,14 +65,33 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     return Math.max(0, allGonguSchedules.length - 1);
   }, [allGonguSchedules]);
 
-  // Initialize center index to today's closest schedule (only once)
+  // Find today index in the filtered schedules for display
+  const todayIndex = useMemo(() => {
+    if (!searchQuery.trim()) {
+      // No search, use the index from all schedules
+      return todayIndexInAll;
+    }
+    
+    // When searching, find first non-passed schedule in filtered results
+    const today = new Date().toISOString().split('T')[0];
+    const notPassedIndex = gonguSchedules.findIndex(s => s.date >= today);
+    
+    if (notPassedIndex !== -1) {
+      return notPassedIndex;
+    }
+    
+    return Math.max(0, gonguSchedules.length - 1);
+  }, [gonguSchedules, allGonguSchedules, todayIndexInAll, searchQuery]);
+
+  // Initialize center index to today's closest schedule
   const initializedRef = useRef(false);
   useEffect(() => {
-    if (!initializedRef.current && todayIndex >= 0) {
-      setCenterIndex(todayIndex);
+    // Initialize when schedules are first loaded
+    if (!initializedRef.current && allGonguSchedules.length > 0 && todayIndexInAll >= 0) {
+      setCenterIndex(todayIndexInAll);
       initializedRef.current = true;
     }
-  }, [todayIndex]);
+  }, [allGonguSchedules.length, todayIndexInAll]);
 
   // Handle search: jump to first result when starting search
   const prevSearchQueryRef = useRef('');
