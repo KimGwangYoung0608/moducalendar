@@ -14,6 +14,7 @@ export function GonguList({ schedules, categories }: GonguListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [centerIndex, setCenterIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const itemHeight = 60; // Height of each item in pixels
 
   // Find "공구" category
@@ -62,14 +63,24 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     setCenterIndex(todayIndex);
   }, [todayIndex]);
 
-  // Reset center index when search results change
+  // Reset center index only when search results count changes (not on every keystroke)
+  const prevResultsCountRef = useRef<number>(gonguSchedules.length);
   useEffect(() => {
-    if (searchQuery.trim()) {
-      setCenterIndex(0); // Reset to first result when searching
-    } else {
-      setCenterIndex(todayIndex); // Reset to today when clearing search
+    const currentCount = gonguSchedules.length;
+    const prevCount = prevResultsCountRef.current;
+    
+    // Only reset index if:
+    // 1. Search results count changed (not just the query text)
+    // 2. User is actively searching (has query)
+    if (currentCount !== prevCount && searchQuery.trim()) {
+      setCenterIndex(0); // Reset to first result when search results change
+    } else if (!searchQuery.trim() && prevCount !== currentCount) {
+      // When clearing search, go back to today
+      setCenterIndex(todayIndex);
     }
-  }, [searchQuery, todayIndex]);
+    
+    prevResultsCountRef.current = currentCount;
+  }, [gonguSchedules.length, searchQuery, todayIndex]);
 
   // Scroll to center the selected item
   useEffect(() => {
@@ -156,6 +167,7 @@ export function GonguList({ schedules, categories }: GonguListProps) {
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               type="text"
               placeholder="제목 또는 내용으로 검색..."
               value={searchQuery}
@@ -212,6 +224,7 @@ export function GonguList({ schedules, categories }: GonguListProps) {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               type="text"
               placeholder="제목 또는 내용으로 검색..."
               value={searchQuery}
