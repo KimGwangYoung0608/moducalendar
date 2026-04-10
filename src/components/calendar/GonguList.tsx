@@ -1,6 +1,7 @@
 import { useMemo, useRef, useEffect, useState } from 'react';
-import { ShoppingBag, ChevronUp, ChevronDown } from 'lucide-react';
+import { ShoppingBag, ChevronUp, ChevronDown, Search, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Schedule, Category } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +13,7 @@ interface GonguListProps {
 export function GonguList({ schedules, categories }: GonguListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [centerIndex, setCenterIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemHeight = 60; // Height of each item in pixels
 
   // Find "공구" category
@@ -23,13 +25,22 @@ export function GonguList({ schedules, categories }: GonguListProps) {
   const gonguSchedules = useMemo(() => {
     if (!gonguCategory) return [];
     
-    return schedules
+    let filtered = schedules
       .filter(s => 
         s.categoryId === gonguCategory.id && 
         !s.title.startsWith('정산+')
-      )
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }, [schedules, gonguCategory]);
+      );
+    
+    // Apply search filter if search query exists
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(s => 
+        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.description.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    return filtered.sort((a, b) => a.date.localeCompare(b.date));
+  }, [schedules, gonguCategory, searchQuery]);
 
   // Find the index of the schedule closest to today (but not past)
   const todayIndex = useMemo(() => {
@@ -50,6 +61,15 @@ export function GonguList({ schedules, categories }: GonguListProps) {
   useEffect(() => {
     setCenterIndex(todayIndex);
   }, [todayIndex]);
+
+  // Reset center index when search results change
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      setCenterIndex(0); // Reset to first result when searching
+    } else {
+      setCenterIndex(todayIndex); // Reset to today when clearing search
+    }
+  }, [searchQuery, todayIndex]);
 
   // Scroll to center the selected item
   useEffect(() => {
@@ -99,6 +119,11 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     setCenterIndex(newIndex);
   };
 
+  // Clear search
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
   if (!gonguCategory) {
     return (
       <Card className="mt-4">
@@ -127,8 +152,27 @@ export function GonguList({ schedules, categories }: GonguListProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Search Input */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="제목 또는 내용으로 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9"
+            />
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground text-center py-4">
-            등록된 공구 일정이 없습니다
+            {searchQuery ? '검색 결과가 없습니다' : '등록된 공구 일정이 없습니다'}
           </p>
         </CardContent>
       </Card>
@@ -163,6 +207,33 @@ export function GonguList({ schedules, categories }: GonguListProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
+        {/* Search Input */}
+        <div className="px-4 pt-4 pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="제목 또는 내용으로 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9"
+            />
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {searchQuery && (
+            <p className="text-xs text-muted-foreground mt-2">
+              '{searchQuery}' 검색 결과: {gonguSchedules.length}개
+            </p>
+          )}
+        </div>
+
         {/* Navigation Up Button */}
         <button
           onClick={() => handleNavigate('up')}
