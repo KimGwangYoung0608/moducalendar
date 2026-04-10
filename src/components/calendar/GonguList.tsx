@@ -49,25 +49,20 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     );
   }, [allGonguSchedules, searchQuery]);
 
-  // Find the index of today's schedule (exact match) or closest future schedule
+  // Find the first schedule that hasn't passed (today or future)
   const todayIndex = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     
-    // First try to find exact today match
-    const todayExactIndex = allGonguSchedules.findIndex(s => s.date === today);
-    if (todayExactIndex !== -1) {
-      return todayExactIndex;
+    // Find first schedule that is today or in the future (hasn't passed)
+    const notPassedIndex = allGonguSchedules.findIndex(s => s.date >= today);
+    
+    if (notPassedIndex !== -1) {
+      // Found a schedule that hasn't passed yet
+      return notPassedIndex;
     }
     
-    // If no exact match, find first schedule that is in the future
-    const futureIndex = allGonguSchedules.findIndex(s => s.date > today);
-    
-    if (futureIndex === -1) {
-      // All schedules are in the past, show the last one
-      return Math.max(0, allGonguSchedules.length - 1);
-    }
-    
-    return futureIndex;
+    // All schedules are in the past, show the last one
+    return Math.max(0, allGonguSchedules.length - 1);
   }, [allGonguSchedules]);
 
   // Initialize center index to today's closest schedule (only once)
