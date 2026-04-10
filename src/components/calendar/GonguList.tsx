@@ -2,6 +2,7 @@ import { useMemo, useRef, useEffect, useState } from 'react';
 import { ShoppingBag, ChevronUp, ChevronDown, Search, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Schedule, Category } from '@/types/calendar';
 import { cn } from '@/lib/utils';
 
@@ -13,7 +14,8 @@ interface GonguListProps {
 export function GonguList({ schedules, categories }: GonguListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [centerIndex, setCenterIndex] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // Input value
+  const [searchQuery, setSearchQuery] = useState(''); // Actual search query (after button click)
   const searchInputRef = useRef<HTMLInputElement>(null);
   const isSearchActiveRef = useRef(false);
   const itemHeight = 60; // Height of each item in pixels
@@ -47,12 +49,18 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     );
   }, [allGonguSchedules, searchQuery]);
 
-  // Find the index of the schedule closest to today (based on all schedules, not filtered)
+  // Find the index of today's schedule (exact match) or closest future schedule
   const todayIndex = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     
-    // Find first schedule that is today or in the future
-    const futureIndex = allGonguSchedules.findIndex(s => s.date >= today);
+    // First try to find exact today match
+    const todayExactIndex = allGonguSchedules.findIndex(s => s.date === today);
+    if (todayExactIndex !== -1) {
+      return todayExactIndex;
+    }
+    
+    // If no exact match, find first schedule that is in the future
+    const futureIndex = allGonguSchedules.findIndex(s => s.date > today);
     
     if (futureIndex === -1) {
       // All schedules are in the past, show the last one
@@ -139,8 +147,21 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     setCenterIndex(newIndex);
   };
 
+  // Handle search button click
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+  };
+
+  // Handle search on Enter key
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   // Clear search
   const handleClearSearch = () => {
+    setSearchInput('');
     setSearchQuery('');
   };
 
@@ -173,24 +194,30 @@ export function GonguList({ schedules, categories }: GonguListProps) {
         </CardHeader>
         <CardContent>
           {/* Search Input */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="제목 또는 내용으로 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9"
-            />
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          <div className="flex gap-2 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="제목 또는 내용으로 검색..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
+                className="pl-9 pr-9"
+              />
+              {searchInput && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Button onClick={handleSearch} size="default">
+              검색
+            </Button>
           </div>
           <p className="text-sm text-muted-foreground text-center py-4">
             {searchQuery ? '검색 결과가 없습니다' : '등록된 공구 일정이 없습니다'}
@@ -230,24 +257,30 @@ export function GonguList({ schedules, categories }: GonguListProps) {
       <CardContent className="p-0">
         {/* Search Input */}
         <div className="px-4 pt-4 pb-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="제목 또는 내용으로 검색..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-9"
-            />
-            {searchQuery && (
-              <button
-                onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="제목 또는 내용으로 검색..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyPress={handleSearchKeyPress}
+                className="pl-9 pr-9"
+              />
+              {searchInput && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Button onClick={handleSearch} size="default">
+              검색
+            </Button>
           </div>
           {searchQuery && (
             <p className="text-xs text-muted-foreground mt-2">
