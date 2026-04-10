@@ -15,6 +15,7 @@ export function GonguList({ schedules, categories }: GonguListProps) {
   const [centerIndex, setCenterIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const isSearchActiveRef = useRef(false);
   const itemHeight = 60; // Height of each item in pixels
 
   // Find "공구" category
@@ -22,65 +23,73 @@ export function GonguList({ schedules, categories }: GonguListProps) {
     return categories.find(c => c.name === '공구');
   }, [categories]);
 
-  // Filter schedules: only "공구" category, exclude "정산+" prefix schedules
-  const gonguSchedules = useMemo(() => {
+  // Get all gongu schedules (without search filter)
+  const allGonguSchedules = useMemo(() => {
     if (!gonguCategory) return [];
     
-    let filtered = schedules
+    return schedules
       .filter(s => 
         s.categoryId === gonguCategory.id && 
         !s.title.startsWith('정산+')
-      );
-    
-    // Apply search filter if search query exists
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(s => 
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      )
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [schedules, gonguCategory]);
+
+  // Filter schedules: apply search filter
+  const gonguSchedules = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allGonguSchedules;
     }
     
-    return filtered.sort((a, b) => a.date.localeCompare(b.date));
-  }, [schedules, gonguCategory, searchQuery]);
+    return allGonguSchedules.filter(s => 
+      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [allGonguSchedules, searchQuery]);
 
-  // Find the index of the schedule closest to today (but not past)
+  // Find the index of the schedule closest to today (based on all schedules, not filtered)
   const todayIndex = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     
     // Find first schedule that is today or in the future
-    const futureIndex = gonguSchedules.findIndex(s => s.date >= today);
+    const futureIndex = allGonguSchedules.findIndex(s => s.date >= today);
     
     if (futureIndex === -1) {
       // All schedules are in the past, show the last one
-      return Math.max(0, gonguSchedules.length - 1);
+      return Math.max(0, allGonguSchedules.length - 1);
     }
     
     return futureIndex;
-  }, [gonguSchedules]);
+  }, [allGonguSchedules]);
 
-  // Initialize center index to today's closest schedule
+  // Initialize center index to today's closest schedule (only once)
+  const initializedRef = useRef(false);
   useEffect(() => {
-    setCenterIndex(todayIndex);
+    if (!initializedRef.current && todayIndex >= 0) {
+      setCenterIndex(todayIndex);
+      initializedRef.current = true;
+    }
   }, [todayIndex]);
 
-  // Reset center index only when search results count changes (not on every keystroke)
-  const prevResultsCountRef = useRef<number>(gonguSchedules.length);
+  // Handle search: jump to first result when starting search
+  const prevSearchQueryRef = useRef('');
   useEffect(() => {
-    const currentCount = gonguSchedules.length;
-    const prevCount = prevResultsCountRef.current;
+    const hadSearch = prevSearchQueryRef.current.trim().length > 0;
+    const hasSearch = searchQuery.trim().length > 0;
     
-    // Only reset index if:
-    // 1. Search results count changed (not just the query text)
-    // 2. User is actively searching (has query)
-    if (currentCount !== prevCount && searchQuery.trim()) {
-      setCenterIndex(0); // Reset to first result when search results change
-    } else if (!searchQuery.trim() && prevCount !== currentCount) {
-      // When clearing search, go back to today
+    // User just started searching (empty → has text)
+    if (!hadSearch && hasSearch && gonguSchedules.length > 0) {
+      setCenterIndex(0);
+      isSearchActiveRef.current = true;
+    }
+    // User cleared search (has text → empty)
+    else if (hadSearch && !hasSearch) {
       setCenterIndex(todayIndex);
+      isSearchActiveRef.current = false;
     }
     
-    prevResultsCountRef.current = currentCount;
-  }, [gonguSchedules.length, searchQuery, todayIndex]);
+    prevSearchQueryRef.current = searchQuery;
+  }, [searchQuery, todayIndex, gonguSchedules.length]);
 
   // Scroll to center the selected item
   useEffect(() => {
